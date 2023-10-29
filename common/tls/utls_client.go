@@ -127,6 +127,10 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 		return nil, E.New("missing server_name or insecure=true")
 	}
 
+	if options.MixedCaseSNI {
+		serverName = randomizeCase(serverName)
+	}
+
 	var tlsConfig utls.Config
 	tlsConfig.Time = ntp.TimeFuncFromContext(ctx)
 	if options.DisableSNI {

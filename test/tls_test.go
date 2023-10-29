@@ -60,6 +60,7 @@ func TestUTLS(t *testing.T) {
 					TLS: &option.OutboundTLSOptions{
 						Enabled:         true,
 						ServerName:      "example.org",
+						MixedCaseSNI:    true,
 						CertificatePath: certPem,
 						UTLS: &option.OutboundUTLSOptions{
 							Enabled:     true,

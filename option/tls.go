@@ -20,6 +20,7 @@ type InboundTLSOptions struct {
 type OutboundTLSOptions struct {
 	Enabled         bool                    `json:"enabled,omitempty"`
 	DisableSNI      bool                    `json:"disable_sni,omitempty"`
+	MixedCaseSNI    bool                    `json:"mixedcase_sni,omitempty"`
 	ServerName      string                  `json:"server_name,omitempty"`
 	Insecure        bool                    `json:"insecure,omitempty"`
 	ALPN            Listable[string]        `json:"alpn,omitempty"`
