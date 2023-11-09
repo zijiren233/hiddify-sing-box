@@ -47,7 +47,10 @@ func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, opt
 	requestURL.Path = options.Path
 	err := sHTTP.URLSetPath(&requestURL, options.Path)
 	if err != nil {
-		return nil
+		return nil, E.Cause(err, "parse path")
+	}
+	if !strings.HasPrefix(requestURL.Path, "/") {
+		requestURL.Path = "/" + requestURL.Path
 	}
 	if !strings.HasPrefix(requestURL.Path, "/") {
 		requestURL.Path = "/" + requestURL.Path
@@ -55,6 +58,15 @@ func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, opt
 	headers := make(http.Header)
 	for key, value := range options.Headers {
 		headers[key] = value
+		if key == "Host" {
+			if len(value) > 1 {
+				return nil, E.New("multiple Host headers")
+			}
+			requestURL.Host = value[0]
+		}
+	}
+	if headers.Get("User-Agent") == "" {
+		headers.Set("User-Agent", "Go-http-client/1.1")
 	}
 	if headers.Get("User-Agent") == "" {
 		headers.Set("User-Agent", "Go-http-client/1.1")
@@ -67,7 +79,32 @@ func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, opt
 		headers,
 		options.MaxEarlyData,
 		options.EarlyDataHeaderName,
+	}, nil
+}
+
+func (c *Client) dialContext(ctx context.Context, requestURL *url.URL, headers http.Header) (*WebsocketConn, error) {
+	conn, err := c.dialer.DialContext(ctx, N.NetworkTCP, c.serverAddr)
+	if err != nil {
+		return nil, err
 	}
+	if c.tlsConfig != nil {
+		conn, err = tls.ClientHandshake(ctx, conn, c.tlsConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	conn.SetDeadline(time.Now().Add(C.TCPTimeout))
+	var protocols []string
+	if protocolHeader := headers.Get("Sec-WebSocket-Protocol"); protocolHeader != "" {
+		protocols = []string{protocolHeader}
+		headers.Del("Sec-WebSocket-Protocol")
+	}
+	reader, _, err := ws.Dialer{Header: ws.HandshakeHeaderHTTP(headers), Protocols: protocols}.Upgrade(conn, requestURL)
+	conn.SetDeadline(time.Time{})
+	if err != nil {
+		return nil, err
+	}
+	return NewConn(conn, reader, nil, ws.StateClientSide), nil
 }
 
 func (c *Client) dialContext(ctx context.Context, requestURL *url.URL, headers http.Header) (*WebsocketConn, error) {
