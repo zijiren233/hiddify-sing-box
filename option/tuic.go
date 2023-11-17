@@ -28,5 +28,5 @@ type TUICOutboundOptions struct {
 	Heartbeat         Duration            `json:"heartbeat,omitempty"`
 	Network           NetworkList         `json:"network,omitempty"`
 	TLS               *OutboundTLSOptions `json:"tls,omitempty"`
-	Bale              bool                `json:"bale,omitempty"`
+	TurnRelay         *TurnRelayOptions`json:"turn_relay,omitempty"`	
 }

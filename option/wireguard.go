@@ -1,7 +1,6 @@
 package option
 
-import "net/netip"
-
+import "net/netip" 
 type WireGuardOutboundOptions struct {
 	DialerOptions
 	SystemInterface bool                   `json:"system_interface,omitempty"`
@@ -16,6 +15,7 @@ type WireGuardOutboundOptions struct {
 	Workers       int         `json:"workers,omitempty"`
 	MTU           uint32      `json:"mtu,omitempty"`
 	Network       NetworkList `json:"network,omitempty"`
+	TurnRelay     *TurnRelayOptions`json:"turn_relay,omitempty"`	
 }
 
 type WireGuardPeer struct {

@@ -104,4 +104,6 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box/outbound/hiddify => ./outbound/hiddify
+replace github.com/sagernet/sing-box/outbound/houtbound => ./outbound/houtbound
+
+replace github.com/sagernet/sing-box/option => ./option
