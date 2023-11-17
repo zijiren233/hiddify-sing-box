@@ -95,7 +95,8 @@ func ApplyTurnRelay(option CommonTurnRelayOptions)(*Forwarder) {
 	log.Printf("relayed-address=%s", relayConn.LocalAddr().String())
 	
 	// Forward(src, dst). It's asynchronous.
-	forwarder, err := Forward(fmt.Sprint("127.0.0.1:%d",rnd_port), targetServerAddr, relayConn, DefaultTimeout)
+	
+	forwarder, err := Forward(fmt.Sprintf("127.0.0.1:%d",rnd_port), targetServerAddr, relayConn, DefaultTimeout)
 	if err != nil {
 		return nil
 	}
