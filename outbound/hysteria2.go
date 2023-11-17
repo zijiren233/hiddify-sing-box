@@ -20,6 +20,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
+	"github.com/sagernet/sing-box/outbound/hiddify"
 )
 
 var (
@@ -30,12 +31,25 @@ var (
 type Hysteria2 struct {
 	myOutboundAdapter
 	client *hysteria2.Client
+	bale   *hiddify.Bale
 }
 
 func NewHysteria2(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.Hysteria2OutboundOptions) (*Hysteria2, error) {
 	options.UDPFragmentDefault = true
 	if options.TLS == nil || !options.TLS.Enabled {
 		return nil, C.ErrTLSRequired
+	}
+	var bale *hiddify.Bale
+	if options.Bale {
+		var err2 error
+		bale,err2 = hiddify.ApplyBale(options.Server, options.ServerPort)	
+		if err2 == nil {	
+			options.Server=bale.Host
+			options.ServerPort=bale.RelayPort
+			options.Server="127.0.0.1"
+		}else{
+			return nil, err2
+		}
 	}
 	tlsConfig, err := tls.NewClient(ctx, options.Server, common.PtrValueOrDefault(options.TLS))
 	if err != nil {
@@ -84,6 +98,7 @@ func NewHysteria2(ctx context.Context, router adapter.Router, logger log.Context
 			dependencies: withDialerDependency(options.DialerOptions),
 		},
 		client: client,
+		bale:   bale,
 	}, nil
 }
 
@@ -121,5 +136,8 @@ func (h *Hysteria2) InterfaceUpdated() error {
 }
 
 func (h *Hysteria2) Close() error {
+	if h.bale != nil {
+		h.bale.Close()
+	}
 	return h.client.CloseWithError(os.ErrClosed)
 }

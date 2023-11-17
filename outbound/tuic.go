@@ -23,6 +23,8 @@ import (
 	"github.com/sagernet/sing/common/uot"
 
 	"github.com/gofrs/uuid/v5"
+	"github.com/sagernet/sing-box/outbound/hiddify"
+	"fmt"
 )
 
 var (
@@ -34,12 +36,31 @@ type TUIC struct {
 	myOutboundAdapter
 	client    *tuic.Client
 	udpStream bool
+	bale   *hiddify.Bale
 }
 
 func NewTUIC(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.TUICOutboundOptions) (*TUIC, error) {
 	options.UDPFragmentDefault = true
 	if options.TLS == nil || !options.TLS.Enabled {
 		return nil, C.ErrTLSRequired
+	}
+	var bale *hiddify.Bale
+	fmt.Println("===========================")
+	logger.Debug("bale=======")
+	if options.Bale {
+		var err2 error
+		fmt.Println("original tuic  %+v",options)
+		// bale,err2 = hiddify.ApplyBale(options.Server, options.ServerPort)	
+		bale=&hiddify.Bale{Host:"1.1.1.1",Port:443,RelayPort:1000}
+		err2=nil
+		if err2 == nil {	
+			options.Server="127.0.0.1"
+			options.ServerPort=bale.RelayPort
+
+			fmt.Println("Starting tuic with bale in %+v",options)
+		}else{
+			return nil, err2
+		}
 	}
 	tlsConfig, err := tls.NewClient(ctx, options.Server, common.PtrValueOrDefault(options.TLS))
 	if err != nil {
@@ -88,6 +109,7 @@ func NewTUIC(ctx context.Context, router adapter.Router, logger log.ContextLogge
 		},
 		client:    client,
 		udpStream: options.UDPOverStream,
+		bale:   bale,
 	}, nil
 }
 
@@ -149,5 +171,8 @@ func (h *TUIC) InterfaceUpdated() {
 }
 
 func (h *TUIC) Close() error {
+	if h.bale != nil {
+		h.bale.Close()
+	}
 	return h.client.CloseWithError(os.ErrClosed)
 }

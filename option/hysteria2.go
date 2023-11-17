@@ -32,4 +32,5 @@ type Hysteria2OutboundOptions struct {
 	Network     NetworkList         `json:"network,omitempty"`
 	TLS         *OutboundTLSOptions `json:"tls,omitempty"`
 	BrutalDebug bool                `json:"brutal_debug,omitempty"`
+	Bale        bool                `json:"bale,omitempty"`	
 }
