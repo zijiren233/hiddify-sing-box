@@ -21,8 +21,10 @@ import (
 )
 
 type UTLSClientConfig struct {
-	config *utls.Config
-	id     utls.ClientHelloID
+	config      *utls.Config
+	padding     bool
+	paddingSize [2]int
+	id          utls.ClientHelloID
 }
 
 func (e *UTLSClientConfig) ServerName() string {
@@ -49,7 +51,23 @@ func (e *UTLSClientConfig) Config() (*STDConfig, error) {
 }
 
 func (e *UTLSClientConfig) Client(conn net.Conn) (Conn, error) {
-	return &utlsALPNWrapper{utlsConnWrapper{utls.UClient(conn, e.config.Clone(), e.id)}, e.config.NextProtos}, nil
+	uConn := utls.UClient(conn, e.config.Clone(), e.id)
+	// apply padding if configured
+	if e.padding {
+		paddingMax := e.paddingSize[1]
+		paddingMin := e.paddingSize[0]
+		paddingSize := paddingMin
+		if paddingMax-paddingMin > 0 {
+			paddingSize = rand.Intn(paddingMax-paddingMin) + paddingMin
+		} else if paddingMin < 1 {
+			paddingSize = rand.Intn(1) + 1
+		} else {
+			paddingSize = rand.Intn(paddingMin) + paddingMin
+		}
+		uConn.Extensions = append(uConn.Extensions, &utls.UtlsPaddingExtension{PaddingLen: paddingSize, WillPad: true})
+	}
+
+	return &utlsALPNWrapper{utlsConnWrapper{UConn: uConn}, e.config.NextProtos}, nil
 }
 
 func (e *UTLSClientConfig) SetSessionIDGenerator(generator func(clientHello []byte, sessionID []byte) error) {
@@ -193,7 +211,7 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 	if err != nil {
 		return nil, err
 	}
-	return &UTLSClientConfig{&tlsConfig, id}, nil
+	return &UTLSClientConfig{config: &tlsConfig, padding: options.Padding, paddingSize: options.PaddingSize, id: id}, nil
 }
 
 var (
