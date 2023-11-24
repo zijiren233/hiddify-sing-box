@@ -22,7 +22,6 @@ import (
 
 type UTLSClientConfig struct {
 	config      *utls.Config
-	padding     bool
 	paddingSize [2]int
 	id          utls.ClientHelloID
 }
@@ -53,7 +52,7 @@ func (e *UTLSClientConfig) Config() (*STDConfig, error) {
 func (e *UTLSClientConfig) Client(conn net.Conn) (Conn, error) {
 	uConn := utls.UClient(conn, e.config.Clone(), e.id)
 	// apply padding if configured
-	if e.padding {
+	if e.paddingSize[0] > 0 || e.paddingSize[1] > 0 {
 		paddingMax := e.paddingSize[1]
 		paddingMin := e.paddingSize[0]
 		paddingSize := paddingMin
@@ -211,7 +210,7 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 	if err != nil {
 		return nil, err
 	}
-	return &UTLSClientConfig{config: &tlsConfig, padding: options.Padding, paddingSize: options.PaddingSize, id: id}, nil
+	return &UTLSClientConfig{config: &tlsConfig, paddingSize: options.PaddingSize, id: id}, nil
 }
 
 var (
