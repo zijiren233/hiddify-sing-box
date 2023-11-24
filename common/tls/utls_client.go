@@ -50,22 +50,17 @@ func (e *UTLSClientConfig) Config() (*STDConfig, error) {
 }
 
 func (e *UTLSClientConfig) Client(conn net.Conn) (Conn, error) {
-	uConn := utls.UClient(conn, e.config.Clone(), e.id)
-	// apply padding if configured
-	if e.paddingSize[0] > 0 || e.paddingSize[1] > 0 {
-		paddingMax := e.paddingSize[1]
-		paddingMin := e.paddingSize[0]
-		paddingSize := paddingMin
-		if paddingMax-paddingMin > 0 {
-			paddingSize = rand.Intn(paddingMax-paddingMin) + paddingMin
-		} else if paddingMin < 1 {
-			paddingSize = rand.Intn(1) + 1
-		} else {
-			paddingSize = rand.Intn(paddingMin) + paddingMin
-		}
-		uConn.Extensions = append(uConn.Extensions, &utls.UtlsPaddingExtension{PaddingLen: paddingSize, WillPad: true})
-	}
+	var uConn *utls.UConn
+	if e.id != utls.HelloCustom {
 
+		uConn = utls.UClient(conn, e.config.Clone(), e.id)
+	} else {
+		var err error
+		uConn, err = makeTLSHelloPacketWithPadding(conn, e, e.config.ServerName)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &utlsALPNWrapper{utlsConnWrapper{UConn: uConn}, e.config.NextProtos}, nil
 }
 
@@ -258,6 +253,8 @@ func uTLSClientHelloID(name string) (utls.ClientHelloID, error) {
 		return randomFingerprint, nil
 	case "randomized":
 		return randomizedFingerprint, nil
+	case "custom":
+		return utls.HelloCustom, nil
 	default:
 		return utls.ClientHelloID{}, E.New("unknown uTLS fingerprint: ", name)
 	}
