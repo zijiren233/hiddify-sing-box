@@ -21,8 +21,9 @@ import (
 )
 
 type UTLSClientConfig struct {
-	config *utls.Config
-	id     utls.ClientHelloID
+	config      *utls.Config
+	paddingSize [2]int
+	id          utls.ClientHelloID
 }
 
 func (e *UTLSClientConfig) ServerName() string {
@@ -49,7 +50,18 @@ func (e *UTLSClientConfig) Config() (*STDConfig, error) {
 }
 
 func (e *UTLSClientConfig) Client(conn net.Conn) (Conn, error) {
-	return &utlsALPNWrapper{utlsConnWrapper{utls.UClient(conn, e.config.Clone(), e.id)}, e.config.NextProtos}, nil
+	var uConn *utls.UConn
+	if e.id != utls.HelloCustom {
+
+		uConn = utls.UClient(conn, e.config.Clone(), e.id)
+	} else {
+		var err error
+		uConn, err = makeTLSHelloPacketWithPadding(conn, e, e.config.ServerName)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &utlsALPNWrapper{utlsConnWrapper{UConn: uConn}, e.config.NextProtos}, nil
 }
 
 func (e *UTLSClientConfig) SetSessionIDGenerator(generator func(clientHello []byte, sessionID []byte) error) {
@@ -193,7 +205,7 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 	if err != nil {
 		return nil, err
 	}
-	return &UTLSClientConfig{&tlsConfig, id}, nil
+	return &UTLSClientConfig{config: &tlsConfig, paddingSize: options.PaddingSize, id: id}, nil
 }
 
 var (
@@ -241,6 +253,8 @@ func uTLSClientHelloID(name string) (utls.ClientHelloID, error) {
 		return randomFingerprint, nil
 	case "randomized":
 		return randomizedFingerprint, nil
+	case "custom":
+		return utls.HelloCustom, nil
 	default:
 		return utls.ClientHelloID{}, E.New("unknown uTLS fingerprint: ", name)
 	}
