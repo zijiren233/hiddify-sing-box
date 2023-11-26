@@ -14,7 +14,7 @@ MAIN_PARAMS = $(PARAMS) -tags $(TAGS)
 MAIN = ./cmd/sing-box
 PREFIX ?= $(shell go env GOPATH)
 
-.PHONY: test release
+.PHONY: test release docs
 
 build:
 	go build $(MAIN_PARAMS) $(MAIN)
@@ -61,7 +61,7 @@ proto_install:
 release:
 	go run ./cmd/internal/build goreleaser release --clean --skip-publish || exit 1
 	mkdir dist/release
-	mv dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/release
+	mv dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/*.pkg.tar.zst dist/release
 	ghr --replace --draft --prerelease -p 3 "v${VERSION}" dist/release
 	rm -r dist/release
 
@@ -182,6 +182,14 @@ lib_install:
 	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.0.0-20230915142329-c6740b6d2950
 	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.0.0-20230915142329-c6740b6d2950
 
+docs:
+	mkdocs serve
+
+publish_docs:
+	mkdocs gh-deploy -m "Update" --force --ignore-version --no-history
+
+docs_install:
+	pip install --force-reinstall mkdocs-material=="9.*" mkdocs-static-i18n=="1.2.*"
 clean:
 	rm -rf bin dist sing-box
 	rm -f $(shell go env GOPATH)/sing-box

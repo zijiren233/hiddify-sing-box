@@ -1,6 +1,7 @@
 package option
 
-import "net/netip" 
+import "net/netip"
+
 type WireGuardOutboundOptions struct {
 	DialerOptions
 	SystemInterface bool                   `json:"system_interface,omitempty"`

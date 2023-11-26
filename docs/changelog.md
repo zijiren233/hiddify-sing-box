@@ -1,3 +1,65 @@
+---
+icon: material/alert-decagram
+---
+
+# ChangeLog
+
+#### 1.7.0-rc.2
+
+* Fix missing UDP user context on TUIC/Hysteria2 inbounds
+* macOS: Add button for uninstall SystemExtension in the standalone graphical client
+
+#### 1.6.6
+
+* Fixes and improvements
+
+#### 1.7.0-rc.1
+
+* Fixes and improvements
+
+#### 1.7.0-beta.5
+
+* Update gVisor to 20231113.0
+* Fixes and improvements
+
+#### 1.7.0-beta.4
+
+* Add `wifi_ssid` and `wifi_bssid` route and DNS rules **1**
+* Fixes and improvements
+
+**1**:
+
+Only supported in graphical clients on Android and iOS.
+
+#### 1.7.0-beta.3
+
+* Fix zero TTL was incorrectly reset
+* Fixes and improvements
+
+#### 1.6.5
+
+* Fix crash if TUIC inbound authentication failed
+* Fixes and improvements
+
+#### 1.7.0-beta.2
+
+* Fix crash if TUIC inbound authentication failed
+* Update quic-go to v0.40.0
+* Fixes and improvements
+
+#### 1.6.4
+
+* Fixes and improvements
+
+#### 1.7.0-beta.1
+
+* Fixes and improvements
+
+#### 1.6.3
+
+* iOS/Android: Fix profile auto update
+* Fixes and improvements
+
 #### 1.7.0-alpha.11
 
 * iOS/Android: Fix profile auto update
