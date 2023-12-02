@@ -205,7 +205,14 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 	if err != nil {
 		return nil, err
 	}
-	return &UTLSClientConfig{config: &tlsConfig, paddingSize: options.PaddingSize, id: id}, nil
+	if options.PaddingSize{
+		padding_size, err := option.ParseIntRange(options.PaddingSize)
+		if err != nil {
+			return nil, E.Cause(err, "invalid Padding Size supplied")
+		}
+		return &UTLSClientConfig{config: &tlsConfig, paddingSize: padding_size, id: id}, nil
+	}
+	return &UTLSClientConfig{config: &tlsConfig, id: id}, nil
 }
 
 var (
