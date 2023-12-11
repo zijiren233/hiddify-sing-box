@@ -23,7 +23,7 @@ type TLSFragment struct {
 }
 
 type fragmentConn struct {
-	dialer      *net.Dialer
+	dialer      net.Dialer
 	fragment    TLSFragment
 	network     string
 	destination M.Socksaddr
