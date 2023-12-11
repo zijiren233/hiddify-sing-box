@@ -3,6 +3,7 @@ package dialer
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -50,41 +51,42 @@ func (c *fragmentConn) Write(b []byte) (n int, err error) {
 	if c.conn == nil {
 		return 0, c.err
 	}
-	// Check if payload is a valid TLS clientHello packet
-	if len(b) >= 5 && b[0] == 22 {
-		clientHelloLen := int(binary.BigEndian.Uint16(b[3:5]))
-		clientHelloData := b[5:]
-
-		for i := 0; i < clientHelloLen; {
-			fragmentEnd := i + int(randBetween(int64(c.fragment.SizeMin), int64(c.fragment.SizeMax)))
-			if fragmentEnd > clientHelloLen {
-				fragmentEnd = clientHelloLen
-			}
-
-			fragment := clientHelloData[i:fragmentEnd]
-			i = fragmentEnd
-
-			header := make([]byte, 5)
-			header[0] = b[0]
-			binary.BigEndian.PutUint16(header[1:], binary.BigEndian.Uint16(b[1:3]))
-			binary.BigEndian.PutUint16(header[3:], uint16(len(fragment)))
-			payload := append(header, fragment...)
-
-			_, err := c.conn.Write(payload)
-			if err != nil {
-				c.err = err
-				return 0, c.err
-			}
-
-			randomInterval := randBetween(int64(c.fragment.SleepMin), int64(c.fragment.SleepMax))
-			time.Sleep(time.Duration(randomInterval))
-		}
-
-		return len(b), nil
+	// Do not fragment if it's not a TLS clientHello packet
+	if len(b) < 5 || b[0] != 22 {
+		fmt.Println("not a TLS clientHello, writing n bytes:", len(b))
+		return c.conn.Write(b)
 	}
 
-	// Write directly if not a clientHello packet
-	return c.conn.Write(b)
+	fmt.Println("received a TLS clientHello, writing n bytes:", len(b))
+	clientHelloLen := int(binary.BigEndian.Uint16(b[3:5]))
+	clientHelloData := b[5:]
+
+	for fragmentStart := 0; fragmentStart < clientHelloLen; {
+		fragmentEnd := fragmentStart + int(randBetween(int64(c.fragment.SizeMin), int64(c.fragment.SizeMax)))
+		if fragmentEnd > clientHelloLen {
+			fragmentEnd = clientHelloLen
+		}
+
+		header := make([]byte, 5)
+		header[0] = b[0]
+		binary.BigEndian.PutUint16(header[1:], binary.BigEndian.Uint16(b[1:3]))
+		binary.BigEndian.PutUint16(header[3:], uint16(fragmentEnd-fragmentStart))
+		payload := append(header, clientHelloData[fragmentStart:fragmentEnd]...)
+
+		_, err := c.conn.Write(payload)
+		if err != nil {
+			c.err = err
+			return 0, c.err
+		}
+
+		if c.fragment.SleepMax != 0 {
+			time.Sleep(time.Duration(randBetween(int64(c.fragment.SleepMin), int64(c.fragment.SleepMax))) * time.Millisecond)
+		}
+
+		fragmentStart = fragmentEnd
+	}
+
+	return len(b), nil
 }
 
 func (c *fragmentConn) Close() error {
