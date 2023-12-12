@@ -3,7 +3,6 @@ package dialer
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -53,11 +52,9 @@ func (c *fragmentConn) Write(b []byte) (n int, err error) {
 	}
 	// Do not fragment if it's not a TLS clientHello packet
 	if len(b) < 5 || b[0] != 22 {
-		fmt.Println("not a TLS clientHello, writing n bytes:", len(b))
 		return c.conn.Write(b)
 	}
 
-	fmt.Println("received a TLS clientHello, writing n bytes:", len(b))
 	clientHelloLen := int(binary.BigEndian.Uint16(b[3:5]))
 	clientHelloData := b[5:]
 
