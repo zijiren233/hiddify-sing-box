@@ -21,7 +21,7 @@ func (d *ExtendedTCPDialer) DialContext(ctx context.Context, network string, des
 	}
 	// Create a TLS-Fragmented dialer
 	fragmentConn := &fragmentConn{
-		dialer:      &d.Dialer,
+		dialer:      d.Dialer,
 		fragment:    d.TLSFragment,
 		network:     network,
 		destination: destination,
