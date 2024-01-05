@@ -1,3 +1,4 @@
+
 //go:build with_wireguard
 
 package outbound
@@ -23,6 +24,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/wireguard-go/device"
+	"github.com/sagernet/sing-box/outbound/houtbound"
 )
 
 var (
@@ -35,9 +37,11 @@ type WireGuard struct {
 	bind      *wireguard.ClientBind
 	device    *device.Device
 	tunDevice wireguard.Device
+	hforwarder   *houtbound.Forwarder
 }
 
 func NewWireGuard(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.WireGuardOutboundOptions) (*WireGuard, error) {
+	hforwarder := houtbound.ApplyTurnRelay(houtbound.CommonTurnRelayOptions{ServerOptions: options.ServerOptions,TurnRelayOptions: options.TurnRelay})
 	outbound := &WireGuard{
 		myOutboundAdapter: myOutboundAdapter{
 			protocol:     C.TypeWireGuard,
@@ -47,6 +51,7 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 			tag:          tag,
 			dependencies: withDialerDependency(options.DialerOptions),
 		},
+		hforwarder:  hforwarder,
 	}
 	var reserved [3]uint8
 	if len(options.Reserved) > 0 {
@@ -239,6 +244,9 @@ func (w *WireGuard) Start() error {
 }
 
 func (w *WireGuard) Close() error {
+	if w.hforwarder != nil {
+		w.hforwarder.Close()
+	}
 	if w.device != nil {
 		w.device.Close()
 	}

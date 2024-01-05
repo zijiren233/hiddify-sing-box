@@ -16,6 +16,7 @@ type WireGuardOutboundOptions struct {
 	Workers       int         `json:"workers,omitempty"`
 	MTU           uint32      `json:"mtu,omitempty"`
 	Network       NetworkList `json:"network,omitempty"`
+	TurnRelay     *TurnRelayOptions`json:"turn_relay,omitempty"`	
 }
 
 type WireGuardPeer struct {

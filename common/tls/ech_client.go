@@ -16,7 +16,7 @@ import (
 	cftls "github.com/sagernet/cloudflare-tls"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing-dns"
+	dns "github.com/sagernet/sing-dns"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/ntp"
 
@@ -101,7 +101,11 @@ func NewECHClient(ctx context.Context, serverAddress string, options option.Outb
 	if options.DisableSNI {
 		tlsConfig.ServerName = "127.0.0.1"
 	} else {
-		tlsConfig.ServerName = serverName
+		if options.MixedCaseSNI {
+			tlsConfig.ServerName = randomizeCase(tlsConfig.ServerName)
+		} else {
+			tlsConfig.ServerName = serverName
+		}
 	}
 	if options.Insecure {
 		tlsConfig.InsecureSkipVerify = options.Insecure

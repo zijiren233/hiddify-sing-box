@@ -111,6 +111,8 @@ func New(options Options) (*Box, error) {
 		}
 		inbounds = append(inbounds, in)
 	}
+	var lastErr error      //hiddify
+	var lastErrDesc string //hiddify
 	for i, outboundOptions := range options.Outbounds {
 		var out adapter.Outbound
 		var tag string
@@ -126,10 +128,17 @@ func New(options Options) (*Box, error) {
 			tag,
 			outboundOptions)
 		if err != nil {
-			return nil, E.Cause(err, "parse outbound[", i, "]")
+			lastErrDesc = fmt.Sprintf("parse outbound[%d] \n\n%+v \n\n\nerror: %+v", i, out, err)     //hiddify
+			log := logFactory.NewLogger(F.ToString("outbound/", outboundOptions.Type, "[", tag, "]")) //hiddify
+			log.Error(lastErrDesc)                                                                    //hiddify
+			lastErr = err                                                                             //hiddify
+			out = outbound.NewBlock(log, tag)                                                         //hiddify
 		}
 		outbounds = append(outbounds, out)
 	}
+	if len(outbounds) == 0 && lastErr != nil { //hiddify
+		return nil, E.Cause(lastErr, lastErrDesc) //hiddify
+	} //hiddify
 	err = router.Initialize(inbounds, outbounds, func() adapter.Outbound {
 		out, oErr := outbound.New(ctx, router, logFactory.NewLogger("outbound/direct"), "direct", option.Outbound{Type: "direct", Tag: "default"})
 		common.Must(oErr)
@@ -258,7 +267,7 @@ func (s *Box) start() error {
 			return E.Cause(err, "initialize inbound/", in.Type(), "[", tag, "]")
 		}
 	}
-	return nil
+	return s.postStart()
 }
 
 func (s *Box) postStart() error {
@@ -269,16 +278,17 @@ func (s *Box) postStart() error {
 			return E.Cause(err, "start ", serviceName)
 		}
 	}
-	for serviceName, service := range s.outbounds {
-		if lateService, isLateService := service.(adapter.PostStarter); isLateService {
-			s.logger.Trace("post-starting ", service)
-			err := lateService.PostStart()
+	for _, outbound := range s.outbounds {
+		if lateOutbound, isLateOutbound := outbound.(adapter.PostStarter); isLateOutbound {
+			s.logger.Trace("post-starting outbound/", outbound.Tag())
+			err := lateOutbound.PostStart()
 			if err != nil {
-				return E.Cause(err, "post-start ", serviceName)
+				return E.Cause(err, "post-start outbound/", outbound.Tag())
 			}
 		}
 	}
-	return nil
+	s.logger.Trace("post-starting router")
+	return s.router.PostStart()
 }
 
 func (s *Box) Close() error {
