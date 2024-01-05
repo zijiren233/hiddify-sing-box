@@ -4,6 +4,19 @@ icon: material/alert-decagram
 
 # ChangeLog
 
+#### 1.7.8
+
+* Fixes and improvements
+
+#### 1.7.7
+
+* Fix V2Ray transport `path` validation behavior **1**
+* Fixes and improvements
+
+**1**:
+
+See [V2Ray transport](/configuration/shared/v2ray-transport/).
+
 #### 1.7.6
 
 * Fixes and improvements
