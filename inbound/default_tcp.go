@@ -3,6 +3,7 @@ package inbound
 import (
 	"context"
 	"net"
+	"github.com/sagernet/sing-box/common/proxyproto"//Hiddify
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/log"
@@ -33,9 +34,13 @@ func (a *myInboundAdapter) ListenTCP() (net.Listener, error) {
 	if err == nil {
 		a.logger.Info("tcp server started at ", tcpListener.Addr())
 	}
+	//Hiddify
 	if a.listenOptions.ProxyProtocol || a.listenOptions.ProxyProtocolAcceptNoHeader {
-		return nil, E.New("Proxy Protocol is deprecated and removed in sing-box 1.6.0")
+		a.logger.Warn("Proxy Protocol is deprecated, see https://sing-box.sagernet.org/deprecated")
+		// return nil, E.New("Proxy Protocol is deprecated and removed in sing-box 1.6.0")
+		tcpListener = &proxyproto.Listener{Listener: tcpListener, AcceptNoHeader: a.listenOptions.ProxyProtocolAcceptNoHeader}
 	}
+	//Hiddify
 	a.tcpListener = tcpListener
 	return tcpListener, err
 }
