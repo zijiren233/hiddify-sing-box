@@ -139,7 +139,7 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 		return nil, E.New("missing server_name or insecure=true")
 	}
 
-	if options.TLSTricks.MixedCaseSNI {
+	if options.TLSTricks != nil && options.TLSTricks.MixedCaseSNI {
 		serverName = randomizeCase(serverName)
 	}
 
@@ -205,20 +205,23 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 	if err != nil {
 		return nil, err
 	}
-	if options.TLSTricks != nil && options.TLSTricks.PaddingMode == "random" {
-		padding_size, err := option.ParseIntRange(options.TLSTricks.PaddingSize)
-		if err != nil {
-			return nil, E.Cause(err, "invalid Padding Size supplied")
-		}
-		paddingSize2 := [2]int{int(padding_size[0]), int(padding_size[1])}
+	if options.TLSTricks != nil {
+		switch options.TLSTricks.PaddingMode {
+		case "random":
+			padding_size, err := option.ParseIntRange(options.TLSTricks.PaddingSize)
+			if err != nil {
+				return nil, E.Cause(err, "invalid Padding Size supplied")
+			}
+			paddingSize2 := [2]int{int(padding_size[0]), int(padding_size[1])}
 
-		return &UTLSClientConfig{config: &tlsConfig, paddingSize: paddingSize2, id: id}, nil
-	}
-	if options.TLSTricks.PaddingMode == "sni" {
-		
-	}
-	if options.TLSTricks.PaddingMode == "hello_client" {
-		
+			return &UTLSClientConfig{config: &tlsConfig, paddingSize: paddingSize2, id: id}, nil
+		case "sni":
+
+		case "hello_client":
+		// TODO
+		default:
+			// TODO
+		}
 	}
 	return &UTLSClientConfig{config: &tlsConfig, id: id}, nil
 }
