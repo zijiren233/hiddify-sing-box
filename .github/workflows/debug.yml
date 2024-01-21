@@ -5,7 +5,9 @@ on:
     branches:
       - stable-next
       - main-next
+      - main
       - dev-next
+      - dev
     paths-ignore:
       - '**.md'
       - '.github/**'
