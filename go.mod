@@ -108,3 +108,5 @@ require (
 replace github.com/sagernet/sing-box/outbound/houtbound => ./outbound/houtbound
 
 replace github.com/sagernet/sing-box/option => ./option
+
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240123213950-fa292d4f0a05
