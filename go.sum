@@ -47,8 +47,8 @@ github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a h1:fEBsGL/sjAuJrgah5X
 github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a/go.mod h1:czg5+yv1E0ZGTi6S6vVK1mke0fV+FaUhNGcd6VRS9Ik=
 github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/hiddify/wireguard-go v0.0.0-20240123213950-fa292d4f0a05 h1:lcfUZkVtQ75xMDPKSu5pupOjq71DrcKWlTRvFiYaX9Y=
-github.com/hiddify/wireguard-go v0.0.0-20240123213950-fa292d4f0a05/go.mod h1:YbL4TKHRR6APYQv3U2RGfwLDpPYSyWz6oUlpISBEzBE=
+github.com/hiddify/wireguard-go v0.0.0-20240123215840-77644fc07f74 h1:HuR+Hr9U+iXkeIi7kcwFR0CWMGQUGPZiZqkcsrQW1Zk=
+github.com/hiddify/wireguard-go v0.0.0-20240123215840-77644fc07f74/go.mod h1:YbL4TKHRR6APYQv3U2RGfwLDpPYSyWz6oUlpISBEzBE=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2 h1:9K06NfxkBh25x56yVhWWlKFE8YpicaSfHwoV8SFbueA=
