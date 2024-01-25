@@ -69,9 +69,13 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 		pauseManager: service.FromContext[pause.Manager](ctx),
 		hforwarder:   hforwarder, //hiddify
 	}
-	fakePackets, err := option.ParseIntRange(options.FakePackets)
-	if err != nil {
-		return nil, err
+	fakePackets := []int{0, 0}
+	if options.FakePackets != "" {
+		var err error
+		fakePackets, err = option.ParseIntRange(options.FakePackets)
+		if err != nil {
+			return nil, err
+		}
 	}
 	outbound.fakePackets = fakePackets
 	peers, err := wireguard.ParsePeers(options)
