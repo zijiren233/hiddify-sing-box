@@ -22,7 +22,7 @@ import (
 
 type UTLSClientConfig struct {
 	config      *utls.Config
-	paddingSize [2]int
+	paddingSize []int
 	id          utls.ClientHelloID
 }
 
@@ -208,13 +208,11 @@ func NewUTLSClient(ctx context.Context, serverAddress string, options option.Out
 	if options.TLSTricks != nil {
 		switch options.TLSTricks.PaddingMode {
 		case "random":
-			padding_size, err := option.ParseIntRange(options.TLSTricks.PaddingSize)
+			paddingSize, err := option.ParseIntRange(options.TLSTricks.PaddingSize)
 			if err != nil {
 				return nil, E.Cause(err, "invalid Padding Size supplied")
 			}
-			paddingSize2 := [2]int{int(padding_size[0]), int(padding_size[1])}
-
-			return &UTLSClientConfig{config: &tlsConfig, paddingSize: paddingSize2, id: id}, nil
+			return &UTLSClientConfig{config: &tlsConfig, paddingSize: paddingSize, id: id}, nil
 		case "sni":
 
 		case "hello_client":

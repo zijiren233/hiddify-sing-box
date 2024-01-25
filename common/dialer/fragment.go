@@ -1,14 +1,13 @@
 package dialer
 
 import (
-	"crypto/rand"
 	"encoding/binary"
 	"io"
-	"math/big"
 	"net"
 	"os"
 	"time"
 
+	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/bufio"
 	M "github.com/sagernet/sing/common/metadata"
@@ -16,10 +15,10 @@ import (
 
 type TLSFragment struct {
 	Enabled  bool
-	SizeMin  uint64
-	SizeMax  uint64
-	SleepMin uint64
-	SleepMax uint64
+	SizeMin  int
+	SizeMax  int
+	SleepMin int
+	SleepMax int
 }
 
 type fragmentConn struct {
@@ -38,14 +37,6 @@ func (c *fragmentConn) Read(b []byte) (n int, err error) {
 	return c.conn.Read(b)
 }
 
-func randBetween(left int64, right int64) int64 {
-	if left == right {
-		return left
-	}
-	bigInt, _ := rand.Int(rand.Reader, big.NewInt(right-left))
-	return left + bigInt.Int64()
-}
-
 func (c *fragmentConn) Write(b []byte) (n int, err error) {
 	if c.conn == nil {
 		return 0, c.err
@@ -59,7 +50,7 @@ func (c *fragmentConn) Write(b []byte) (n int, err error) {
 	clientHelloData := b[5:]
 
 	for fragmentStart := 0; fragmentStart < clientHelloLen; {
-		fragmentEnd := fragmentStart + int(randBetween(int64(c.fragment.SizeMin), int64(c.fragment.SizeMax)))
+		fragmentEnd := fragmentStart + option.RandBetween(c.fragment.SizeMin, c.fragment.SizeMax)
 		if fragmentEnd > clientHelloLen {
 			fragmentEnd = clientHelloLen
 		}
@@ -77,7 +68,7 @@ func (c *fragmentConn) Write(b []byte) (n int, err error) {
 		}
 
 		if c.fragment.SleepMax != 0 {
-			time.Sleep(time.Duration(randBetween(int64(c.fragment.SleepMin), int64(c.fragment.SleepMax))) * time.Millisecond)
+			time.Sleep(time.Duration(option.RandBetween(c.fragment.SleepMin, c.fragment.SleepMax)) * time.Millisecond)
 		}
 
 		fragmentStart = fragmentEnd

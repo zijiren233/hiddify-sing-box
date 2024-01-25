@@ -2,6 +2,7 @@ package option
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -14,30 +15,36 @@ type TLSFragmentOptions struct {
 	Sleep   string `json:"sleep,omitempty"` // Time to sleep between sending the fragments in milliseconds
 }
 
-func ParseIntRange(str string) ([]uint64, error) {
+func ParseIntRange(str string) ([]int, error) {
 	var err error
-	result := make([]uint64, 2)
 
 	splitString := strings.Split(str, "-")
+	s, err := strconv.ParseInt(splitString[0], 10, 32)
+	if err != nil {
+		return nil, E.Cause(err, "error parsing string to integer")
+	}
+	e := s
 	if len(splitString) == 2 {
-		result[0], err = strconv.ParseUint(splitString[0], 10, 64)
-		if err != nil {
-			return nil, E.Cause(err, "error parsing string to integer")
-		}
-		result[1], err = strconv.ParseUint(splitString[1], 10, 64)
+		e, err = strconv.ParseInt(splitString[1], 10, 32)
 		if err != nil {
 			return nil, E.Cause(err, "error parsing string to integer")
 		}
 
-		if result[1] < result[0] {
-			return nil, E.Cause(E.New(fmt.Sprintf("upper bound value (%d) must be greater than or equal to lower bound value (%d)", result[1], result[0])), "invalid range")
-		}
-	} else {
-		result[0], err = strconv.ParseUint(splitString[0], 10, 64)
-		if err != nil {
-			return nil, E.Cause(err, "error parsing string to integer")
-		}
-		result[1] = result[0]
 	}
-	return result, err
+	if s < 0 {
+		return nil, E.Cause(E.New(fmt.Sprintf("Negative value (%d) is not possible", s)), "invalid range")
+	}
+	if e < s {
+		return nil, E.Cause(E.New(fmt.Sprintf("upper bound value (%d) must be greater than or equal to lower bound value (%d)", e, s)), "invalid range")
+	}
+	return []int{int(s), int(e)}, nil
+
+}
+
+func RandBetween(min int, max int) int {
+	if max == min {
+		return min
+	}
+	return rand.Intn(max-min+1) + min
+
 }

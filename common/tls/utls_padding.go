@@ -8,6 +8,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/sagernet/sing-box/option"
 	utls "github.com/sagernet/utls"
 )
 
@@ -114,20 +115,14 @@ func (e *FakePaddingExtension) Read(b []byte) (n int, err error) {
 
 // makeTLSHelloPacketWithPadding creates a TLS hello packet with padding.
 func makeTLSHelloPacketWithPadding(conn net.Conn, e *UTLSClientConfig, sni string) (*utls.UConn, error) {
-	paddingMax := e.paddingSize[1]
-	paddingMin := e.paddingSize[0]
-	paddingSize := paddingMin
-	if paddingMax-paddingMin > 0 {
-		paddingSize = rand.Intn(paddingMax-paddingMin) + paddingMin
-	} else if paddingMin < 1 {
-		paddingSize = rand.Intn(1) + 1
-	} else {
-		paddingSize = rand.Intn(paddingMin) + paddingMin
+	paddingSize := option.RandBetween(e.paddingSize[0], e.paddingSize[1])
+	if paddingSize <= 0 {
+		paddingSize = 1
 	}
 	uConn := utls.UClient(conn, e.config.Clone(), e.id)
 	spec := utls.ClientHelloSpec{
 		TLSVersMax: utls.VersionTLS13,
-		TLSVersMin: utls.VersionTLS10,
+		TLSVersMin: utls.VersionTLS12,
 		CipherSuites: []uint16{
 			utls.GREASE_PLACEHOLDER,
 			utls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
@@ -140,6 +135,10 @@ func makeTLSHelloPacketWithPadding(conn net.Conn, e *UTLSClientConfig, sni strin
 			utls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
 		Extensions: []utls.TLSExtension{
+			&FakePaddingExtension{
+				PaddingLen: paddingSize,
+				WillPad:    true,
+			},
 			&utls.SupportedCurvesExtension{Curves: []utls.CurveID{utls.X25519, utls.CurveP256}},
 			&utls.SupportedPointsExtension{SupportedPoints: []byte{0}}, // uncompressed
 			&utls.SessionTicketExtension{},
@@ -161,10 +160,7 @@ func makeTLSHelloPacketWithPadding(conn net.Conn, e *UTLSClientConfig, sni strin
 				{Group: utls.X25519},
 			}},
 			&utls.PSKKeyExchangeModesExtension{Modes: []uint8{1}}, // pskModeDHE
-			&FakePaddingExtension{
-				PaddingLen: paddingSize,
-				WillPad:    true,
-			},
+
 			&SNIExtension{
 				ServerName: sni,
 			},
