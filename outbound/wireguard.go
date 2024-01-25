@@ -1,4 +1,3 @@
-
 //go:build with_wireguard
 
 package outbound
@@ -17,9 +16,10 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing-box/outbound/houtbound"
 	"github.com/sagernet/sing-box/transport/wireguard"
-	"github.com/sagernet/sing-dns"
-	"github.com/sagernet/sing-tun"
+	dns "github.com/sagernet/sing-dns"
+	tun "github.com/sagernet/sing-tun"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -28,7 +28,6 @@ import (
 	"github.com/sagernet/sing/service/pause"
 	"github.com/sagernet/wireguard-go/conn"
 	"github.com/sagernet/wireguard-go/device"
-	"github.com/sagernet/sing-box/outbound/houtbound"
 )
 
 var (
@@ -50,11 +49,12 @@ type WireGuard struct {
 	bind          conn.Bind
 	device        *device.Device
 	tunDevice     wireguard.Device
-	hforwarder   *houtbound.Forwarder
+	hforwarder    *houtbound.Forwarder
+	fakePackets   []int
 }
 
 func NewWireGuard(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.WireGuardOutboundOptions) (*WireGuard, error) {
-	hforwarder := houtbound.ApplyTurnRelay(houtbound.CommonTurnRelayOptions{ServerOptions: options.ServerOptions,TurnRelayOptions: options.TurnRelay})
+	hforwarder := houtbound.ApplyTurnRelay(houtbound.CommonTurnRelayOptions{ServerOptions: options.ServerOptions, TurnRelayOptions: options.TurnRelay})
 	outbound := &WireGuard{
 		myOutboundAdapter: myOutboundAdapter{
 			protocol:     C.TypeWireGuard,
@@ -67,8 +67,13 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 		ctx:          ctx,
 		workers:      options.Workers,
 		pauseManager: service.FromContext[pause.Manager](ctx),
-		hforwarder:  hforwarder,//hiddify
+		hforwarder:   hforwarder, //hiddify
 	}
+	fakePackets, err := option.ParseIntRange(options.FakePackets)
+	if err != nil {
+		return nil, err
+	}
+	outbound.fakePackets = fakePackets
 	peers, err := wireguard.ParsePeers(options)
 	if err != nil {
 		return nil, err
@@ -137,6 +142,7 @@ func (w *WireGuard) Start() error {
 		}
 		bind = wireguard.NewClientBind(w.ctx, w, w.listener, isConnect, connectAddr, reserved)
 	}
+
 	wgDevice := device.NewDevice(w.tunDevice, bind, &device.Logger{
 		Verbosef: func(format string, args ...interface{}) {
 			w.logger.Debug(fmt.Sprintf(strings.ToLower(format), args...))
@@ -144,7 +150,7 @@ func (w *WireGuard) Start() error {
 		Errorf: func(format string, args ...interface{}) {
 			w.logger.Error(fmt.Sprintf(strings.ToLower(format), args...))
 		},
-	}, w.workers)
+	}, w.workers, w.fakePackets)
 	ipcConf := w.ipcConf
 	for _, peer := range w.peers {
 		ipcConf += peer.GenerateIpcLines()
@@ -159,9 +165,9 @@ func (w *WireGuard) Start() error {
 }
 
 func (w *WireGuard) Close() error {
-	if w.hforwarder != nil {//hiddify
-		w.hforwarder.Close()//hiddify
-	}//hiddify
+	if w.hforwarder != nil { //hiddify
+		w.hforwarder.Close() //hiddify
+	} //hiddify
 	if w.device != nil {
 		w.device.Close()
 	}
