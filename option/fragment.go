@@ -16,10 +16,10 @@ type TLSFragmentOptions struct {
 }
 
 func ParseIntRange(str string) ([]int, error) {
-	var err error
 	if str == "" {
-		return nil, E.Cause(err, "Empty input")
+		return nil, E.New("Empty input")
 	}
+	
 	splitString := strings.Split(str, "-")
 	s, err := strconv.ParseInt(splitString[0], 10, 32)
 	if err != nil {
