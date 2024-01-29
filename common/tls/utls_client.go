@@ -70,8 +70,9 @@ func (e *UTLSClientConfig) SetSessionIDGenerator(generator func(clientHello []by
 
 func (e *UTLSClientConfig) Clone() Config {
 	return &UTLSClientConfig{
-		config: e.config.Clone(),
-		id:     e.id,
+		config:      e.config.Clone(),
+		paddingSize: e.paddingSize,
+		id:          e.id,
 	}
 }
 
