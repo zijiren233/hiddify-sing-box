@@ -9,7 +9,7 @@ import (
 	"github.com/sagernet/sing-box/adapter"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing-dns"
+	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/cache"
 	E "github.com/sagernet/sing/common/exceptions"
 	F "github.com/sagernet/sing/common/format"
@@ -131,7 +131,11 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 	}
 	ctx, cancel := context.WithTimeout(ctx, C.DNSTimeout)
 	defer cancel()
-	addrs, err := r.dnsClient.Lookup(ctx, transport, domain, strategy)
+
+	addrs, err := lookupStaticIP(domain, strategy, r.staticDns)
+	if addrs == nil || err != nil {
+		addrs, err = r.dnsClient.Lookup(ctx, transport, domain, strategy)
+	}
 	if len(addrs) > 0 {
 		r.dnsLogger.InfoContext(ctx, "lookup succeed for ", domain, ": ", strings.Join(F.MapToString(addrs), " "))
 	} else if err != nil {
