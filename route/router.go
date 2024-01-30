@@ -26,10 +26,10 @@ import (
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing-box/outbound"
 	"github.com/sagernet/sing-box/transport/fakeip"
-	"github.com/sagernet/sing-dns"
+	dns "github.com/sagernet/sing-dns"
 	mux "github.com/sagernet/sing-mux"
-	"github.com/sagernet/sing-tun"
-	"github.com/sagernet/sing-vmess"
+	tun "github.com/sagernet/sing-tun"
+	vmess "github.com/sagernet/sing-vmess"
 	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/buf"
 	"github.com/sagernet/sing/common/bufio"
@@ -132,7 +132,7 @@ func NewRouter(
 		needPackageManager: C.IsAndroid && platformInterface == nil && common.Any(inbounds, func(inbound option.Inbound) bool {
 			return len(inbound.TunOptions.IncludePackage) > 0 || len(inbound.TunOptions.ExcludePackage) > 0
 		}),
-		staticDns: createEntries(dnsOptions.StaticIPs),//hiddify
+		staticDns: createEntries(dnsOptions.StaticIPs), //hiddify
 	}
 	router.dnsClient = dns.NewClient(dns.ClientOptions{
 		DisableCache:     dnsOptions.DNSClientOptions.DisableCache,
@@ -185,6 +185,7 @@ func NewRouter(
 		transportTags[i] = tag
 		transportTagMap[tag] = true
 	}
+	checkDNSLoopDomain := map[string]string{}
 	ctx = adapter.ContextWithRouter(ctx, router)
 	for {
 		lastLen := len(dummyTransportMap)
@@ -199,6 +200,7 @@ func NewRouter(
 			} else {
 				detour = dialer.NewDetour(router, server.Detour)
 			}
+			checkDNSLoopDomainName := ""
 			switch server.Address {
 			case "local":
 			default:
@@ -221,12 +223,19 @@ func NewRouter(
 						continue
 					}
 				} else if notIpAddress != nil && strings.Contains(server.Address, ".") {
-					return nil, E.New("parse dns server[", tag, "]: missing address_resolver")
+					//Use routing by singbox
+					checkDNSLoopDomainName = serverURL.Host
+					// return nil, E.New("parse dns server[", tag, "]: missing address_resolver")
 				}
 			}
 			transport, err := dns.CreateTransport(tag, ctx, logFactory.NewLogger(F.ToString("dns/transport[", tag, "]")), detour, server.Address)
 			if err != nil {
 				return nil, E.Cause(err, "parse dns server[", tag, "]")
+			} else {
+				if checkDNSLoopDomainName != "" {
+					checkDNSLoopDomain[checkDNSLoopDomainName] = transport.Name()
+				}
+
 			}
 			transports[i] = transport
 			dummyTransportMap[tag] = transport
@@ -330,6 +339,20 @@ func NewRouter(
 		}
 		service.ContextWith[serviceNTP.TimeService](ctx, timeService)
 		router.timeService = timeService
+	}
+
+	for domain, tag := range checkDNSLoopDomain {
+		addrs, err := lookupStaticIP(domain, dns.DomainStrategyAsIS, router.staticDns)
+		if err == nil && addrs != nil && len(addrs) != 0 {
+			continue
+		}
+		ctx, metadata := adapter.AppendContext(ctx)
+		metadata.Domain = domain
+		ctx, dnstransport, _ := router.matchDNS(ctx, false)
+
+		if dnstransport != nil && dnstransport.Name() == tag {
+			return nil, E.New("Dns Loop Detected[", tag, "]")
+		}
 	}
 	return router, nil
 }
