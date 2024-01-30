@@ -3,6 +3,8 @@ package route
 import (
 	"fmt"
 	"net/netip"
+	"regexp"
+	"strings"
 
 	dns "github.com/sagernet/sing-dns"
 )
@@ -67,7 +69,38 @@ func lookupStaticIP(domain string, strategy uint8, entries map[string]StaticDNSE
 		}
 		return addrs, nil
 	} else {
+		ip := getIpOfSslip(domain)
+		if ip != "" {
+			ipaddr, err := netip.ParseAddr(ip)
+			if err != nil {
+				return nil, err
+			}
+			return []netip.Addr{ipaddr}, nil
+		}
 		return nil, fmt.Errorf("NotFound")
 	}
+
+}
+
+const ipv4Pattern = `((25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9])[\.-](25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9])[\.-](25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9])[\.-](25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9])).sslip.io$`
+const ipv6Pattern = `((([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))).sslip.io$`
+
+var ipv4Regex, _ = regexp.Compile(ipv4Pattern)
+var ipv6Regex, _ = regexp.Compile(ipv6Pattern)
+
+func getIpOfSslip(sni string) string {
+	if !strings.HasSuffix(sni, ".sslip.io") {
+		return ""
+	}
+	submatches := ipv4Regex.FindStringSubmatch(sni)
+	if len(submatches) > 1 {
+		return strings.ReplaceAll(submatches[1], "-", ".")
+	} else {
+		submatches := ipv6Regex.FindStringSubmatch(sni)
+		if len(submatches) > 1 {
+			return strings.ReplaceAll(submatches[1], "-", ":")
+		}
+	}
+	return ""
 
 }
