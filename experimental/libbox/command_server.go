@@ -155,7 +155,9 @@ func (s *CommandServer) handleConnection(conn net.Conn) error {
 	case CommandCloseConnections:
 		return s.handleCloseConnections(conn)
 	case CommandGroup:
-		return s.handleGroupConn(conn)
+		return s.handleGroupConn(conn, false)
+	case CommandGroupInfoOnly:
+		return s.handleGroupConn(conn, true)
 	case CommandSelectOutbound:
 		return s.handleSelectOutbound(conn)
 	case CommandURLTest:

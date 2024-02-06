@@ -57,13 +57,13 @@ func (c *CommandClient) handleGroupConn(conn net.Conn) {
 	}
 }
 
-func (s *CommandServer) handleGroupConn(conn net.Conn) error {
+func (s *CommandServer) handleGroupConn(conn net.Conn, onlyGroupItems bool) error {
 	defer conn.Close()
 	ctx := connKeepAlive(conn)
 	for {
 		service := s.service
 		if service != nil {
-			err := writeGroups(conn, service)
+			err := writeGroups(conn, service, onlyGroupItems)
 			if err != nil {
 				return err
 			}
@@ -157,7 +157,7 @@ func readGroups(reader io.Reader) (OutboundGroupIterator, error) {
 	return newIterator(groups), nil
 }
 
-func writeGroups(writer io.Writer, boxService *BoxService) error {
+func writeGroups(writer io.Writer, boxService *BoxService, onlyGroupitems bool) error {
 	historyStorage := service.PtrFromContext[urltest.HistoryStorage](boxService.ctx)
 	cacheFile := service.FromContext[adapter.CacheFile](boxService.ctx)
 	outbounds := boxService.instance.Router().Outbounds()
@@ -185,7 +185,9 @@ func writeGroups(writer io.Writer, boxService *BoxService) error {
 			if !isLoaded {
 				continue
 			}
-
+			if onlyGroupitems && itemOutbound.Type() != C.TypeSelector && itemOutbound.Type() != C.TypeURLTest {
+				continue
+			}
 			var item OutboundGroupItem
 			item.Tag = itemTag
 			item.Type = itemOutbound.Type()

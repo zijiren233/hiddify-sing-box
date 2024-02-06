@@ -13,4 +13,6 @@ const (
 	CommandSetClashMode
 	CommandGetSystemProxyStatus
 	CommandSetSystemProxyEnabled
+
+	CommandGroupInfoOnly//hiddify
 )
