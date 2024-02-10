@@ -142,8 +142,16 @@ func (s *URLTest) DialContext(ctx context.Context, network string, destination M
 	}
 	conn, err := outbound.DialContext(ctx, network, destination)
 	if err == nil {
+		s.group.tcpConnectionFailureCount.Decrement()
 		return s.group.interruptGroup.NewConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
 	}
+
+	if s.group.tcpConnectionFailureCount.Increment() > 10 {
+		s.group.udpConnectionFailureCount.Reset()
+		s.logger.Warn("TCP URLTest Outbound ", s.tag, " failed to connect for 10 times==> test proxies again!")
+		s.group.urlTest(ctx, true)
+	}
+
 	s.logger.ErrorContext(ctx, err)
 	s.group.history.DeleteURLTestHistory(outbound.Tag())
 	return nil, err
@@ -160,7 +168,13 @@ func (s *URLTest) ListenPacket(ctx context.Context, destination M.Socksaddr) (ne
 	}
 	conn, err := outbound.ListenPacket(ctx, destination)
 	if err == nil {
+		s.group.udpConnectionFailureCount.Decrement()
 		return s.group.interruptGroup.NewPacketConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
+	}
+	if s.group.udpConnectionFailureCount.Increment() > 10 {
+		s.group.udpConnectionFailureCount.Reset()
+		s.logger.Warn("UDP URLTest Outbound ", s.tag, " failed to connect for 10 times==> test proxies again!")
+		s.group.urlTest(ctx, true)
 	}
 	s.logger.ErrorContext(ctx, err)
 	s.group.history.DeleteURLTestHistory(outbound.Tag())
@@ -204,6 +218,9 @@ type URLTestGroup struct {
 	close      chan struct{}
 	started    bool
 	lastActive atomic.TypedValue[time.Time]
+
+	tcpConnectionFailureCount MinZeroAtomicUInt64
+	udpConnectionFailureCount MinZeroAtomicUInt64
 }
 
 func NewURLTestGroup(
@@ -402,13 +419,49 @@ func (g *URLTestGroup) performUpdateCheck() {
 	var updated bool
 	if outbound, exists := g.Select(N.NetworkTCP); outbound != nil && (g.selectedOutboundTCP == nil || (exists && outbound != g.selectedOutboundTCP)) {
 		g.selectedOutboundTCP = outbound
+		g.tcpConnectionFailureCount.Reset()
 		updated = true
 	}
 	if outbound, exists := g.Select(N.NetworkUDP); outbound != nil && (g.selectedOutboundUDP == nil || (exists && outbound != g.selectedOutboundUDP)) {
 		g.selectedOutboundUDP = outbound
+		g.udpConnectionFailureCount.Reset()
 		updated = true
 	}
 	if updated {
 		g.interruptGroup.Interrupt(g.interruptExternalConnections)
 	}
+}
+
+type MinZeroAtomicUInt64 struct {
+	access sync.Mutex
+	count  uint64
+}
+
+func (m *MinZeroAtomicUInt64) Increment() uint64 {
+	m.access.Lock()
+	defer m.access.Unlock()
+	m.count++
+	return m.count
+}
+
+func (m *MinZeroAtomicUInt64) Decrement() uint64 {
+	m.access.Lock()
+	defer m.access.Unlock()
+	if m.count > 0 {
+		m.count--
+	}
+	return m.count
+}
+
+func (m *MinZeroAtomicUInt64) Get() uint64 {
+	m.access.Lock()
+	defer m.access.Unlock()
+	return m.count
+}
+
+func (m *MinZeroAtomicUInt64) Reset() uint64 {
+	m.access.Lock()
+	defer m.access.Unlock()
+	m.count = 0
+	return m.count
 }
