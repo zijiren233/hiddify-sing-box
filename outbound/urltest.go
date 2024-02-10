@@ -294,7 +294,7 @@ func (g *URLTestGroup) Select(network string) (adapter.Outbound, bool) {
 			continue
 		}
 		history := g.history.LoadURLTestHistory(RealTag(detour))
-		if history == nil {
+		if history == nil || history.Delay == 65535 {
 			continue
 		}
 		if minDelay == 0 || minDelay > history.Delay+g.tolerance || minDelay > history.Delay-g.tolerance && minTime.Before(history.Time) {
@@ -375,19 +375,21 @@ func (g *URLTestGroup) urlTest(ctx context.Context, force bool) (map[string]uint
 			defer cancel()
 			t, err := urltest.URLTest(ctx, g.link, p)
 			if err != nil {
-				g.logger.Debug("outbound ", tag, " unavailable: ", err)
-				g.history.DeleteURLTestHistory(realTag)
+				g.logger.Debug("outbound ", tag, " unavailable (65535 ms): ", err)
+				// g.history.DeleteURLTestHistory(realTag)
+				t = 65535
 			} else {
 				g.logger.Debug("outbound ", tag, " available: ", t, "ms")
-				g.history.StoreURLTestHistory(realTag, &urltest.History{
-					Time:  time.Now(),
-					Delay: t,
-				})
-				resultAccess.Lock()
-				result[tag] = t
-				g.performUpdateCheck()
-				resultAccess.Unlock()
 			}
+			g.history.StoreURLTestHistory(realTag, &urltest.History{
+				Time:  time.Now(),
+				Delay: t,
+			})
+			resultAccess.Lock()
+			result[tag] = t
+			resultAccess.Unlock()
+			g.performUpdateCheck()
+
 			return nil, nil
 		})
 	}
