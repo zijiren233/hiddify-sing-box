@@ -10,8 +10,8 @@ import (
 )
 
 type StaticDNSEntry struct {
-	IPv4 *netip.Addr
-	IPv6 *netip.Addr
+	IPv4 []netip.Addr
+	IPv6 []netip.Addr
 }
 
 func createEntries(items map[string][]string) map[string]StaticDNSEntry {
@@ -28,9 +28,9 @@ func createEntries(items map[string][]string) map[string]StaticDNSEntry {
 			}
 
 			if ip.Is4() {
-				entry.IPv4 = &ip
+				entry.IPv4 = append(entry.IPv4, ip)
 			} else {
-				entry.IPv6 = &ip
+				entry.IPv4 = append(entry.IPv6, ip)
 			}
 		}
 		entries[domain] = entry
@@ -39,35 +39,37 @@ func createEntries(items map[string][]string) map[string]StaticDNSEntry {
 	return entries
 }
 
+func errorIfEmpty(addrs []netip.Addr) ([]netip.Addr, error) {
+	if len(addrs) == 0 {
+		return addrs, fmt.Errorf("NotFound")
+	}
+	return addrs, nil
+}
 func lookupStaticIP(domain string, strategy uint8, entries map[string]StaticDNSEntry) ([]netip.Addr, error) {
 
 	if staticDns, ok := entries[domain]; ok {
-		addrs := []netip.Addr{}
+
 		switch strategy {
 		case dns.DomainStrategyUseIPv4:
-			if staticDns.IPv4 != nil {
-				addrs = append(addrs, *staticDns.IPv4)
-			}
+			return errorIfEmpty(staticDns.IPv4)
+
 		case dns.DomainStrategyUseIPv6:
-			if staticDns.IPv6 != nil {
-				addrs = append(addrs, *staticDns.IPv6)
-			}
+
+			return errorIfEmpty(staticDns.IPv6)
+
 		case dns.DomainStrategyPreferIPv6:
-			if staticDns.IPv6 != nil {
-				addrs = append(addrs, *staticDns.IPv6)
+			if len(staticDns.IPv6) == 0 {
+				return errorIfEmpty(staticDns.IPv4)
 			}
-			if staticDns.IPv4 != nil {
-				addrs = append(addrs, *staticDns.IPv4)
-			}
+			return errorIfEmpty(append(staticDns.IPv6, staticDns.IPv4...))
+
 		default:
-			if staticDns.IPv4 != nil {
-				addrs = append(addrs, *staticDns.IPv4)
+			if len(staticDns.IPv4) == 0 {
+				return errorIfEmpty(staticDns.IPv6)
 			}
-			if staticDns.IPv6 != nil {
-				addrs = append(addrs, *staticDns.IPv6)
-			}
+			return errorIfEmpty(append(staticDns.IPv4, staticDns.IPv6...))
+
 		}
-		return addrs, nil
 	} else {
 		ip := getIpOfSslip(domain)
 		if ip != "" {

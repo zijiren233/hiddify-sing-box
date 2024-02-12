@@ -136,6 +136,7 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 	if addrs == nil || err != nil {
 		addrs, err = r.dnsClient.Lookup(ctx, transport, domain, strategy)
 	}
+	addrs = r.filterBlocked(ctx, domain, strategy, addrs)
 	if len(addrs) > 0 {
 		r.dnsLogger.InfoContext(ctx, "lookup succeed for ", domain, ": ", strings.Join(F.MapToString(addrs), " "))
 	} else if err != nil {
@@ -145,6 +146,30 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 		err = dns.RCodeNameError
 	}
 	return addrs, err
+}
+
+func (r *Router) filterBlocked(ctx context.Context, domain string, strategy dns.DomainStrategy, addrs []netip.Addr) []netip.Addr {
+	var newAddrs []netip.Addr
+	for _, ip := range addrs {
+		if !isBlocked(ip) {
+			newAddrs = append(newAddrs, ip)
+		}
+	}
+	// if len(addrs) > 0 && len(newAddrs) == 0 && domain != "zula.ir" {
+	// 	res, _ := r.Lookup(ctx, "zula.ir", strategy)
+	// 	return res
+	// }
+	return newAddrs
+}
+
+func isBlocked(ip netip.Addr) bool {
+	if ip.IsPrivate() && ip.Is4() {
+		sl := ip.AsSlice()
+		if sl[0] == 10 && sl[1] == 10 {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Router) LookupDefault(ctx context.Context, domain string) ([]netip.Addr, error) {
