@@ -142,14 +142,14 @@ func (s *URLTest) DialContext(ctx context.Context, network string, destination M
 	}
 	conn, err := outbound.DialContext(ctx, network, destination)
 	if err == nil {
-		s.group.tcpConnectionFailureCount.Decrement()
+		s.group.tcpConnectionFailureCount.Decrement(false)
 		return s.group.interruptGroup.NewConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
 	}
 
-	if s.group.tcpConnectionFailureCount.Increment() > 10 {
-		s.group.udpConnectionFailureCount.Reset()
+	if !s.group.pauseManager.IsNetworkPaused() && s.group.tcpConnectionFailureCount.IncrementConditionReset(10) {
+		s.group.selectedOutboundTCP = nil
 		s.logger.Warn("TCP URLTest Outbound ", s.tag, " failed to connect for 10 times==> test proxies again!")
-		s.group.urlTest(ctx, true)
+		s.CheckOutbounds()
 	}
 
 	s.logger.ErrorContext(ctx, err)
@@ -168,11 +168,11 @@ func (s *URLTest) ListenPacket(ctx context.Context, destination M.Socksaddr) (ne
 	}
 	conn, err := outbound.ListenPacket(ctx, destination)
 	if err == nil {
-		s.group.udpConnectionFailureCount.Decrement()
+		s.group.udpConnectionFailureCount.Decrement(false)
 		return s.group.interruptGroup.NewPacketConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
 	}
-	if s.group.udpConnectionFailureCount.Increment() > 10 {
-		s.group.udpConnectionFailureCount.Reset()
+	if !s.group.pauseManager.IsNetworkPaused() && s.group.udpConnectionFailureCount.IncrementConditionReset(10) {
+		s.group.selectedOutboundUDP = nil
 		s.logger.Warn("UDP URLTest Outbound ", s.tag, " failed to connect for 10 times==> test proxies again!")
 		s.group.urlTest(ctx, true)
 	}
@@ -219,8 +219,8 @@ type URLTestGroup struct {
 	started    bool
 	lastActive atomic.TypedValue[time.Time]
 
-	tcpConnectionFailureCount MinZeroAtomicUInt64
-	udpConnectionFailureCount MinZeroAtomicUInt64
+	tcpConnectionFailureCount MinZeroAtomicInt64
+	udpConnectionFailureCount MinZeroAtomicInt64
 }
 
 func NewURLTestGroup(
@@ -432,36 +432,53 @@ func (g *URLTestGroup) performUpdateCheck() {
 	}
 }
 
-type MinZeroAtomicUInt64 struct {
+type MinZeroAtomicInt64 struct {
 	access sync.Mutex
-	count  uint64
+	count  int64
 }
 
-func (m *MinZeroAtomicUInt64) Increment() uint64 {
+func (m *MinZeroAtomicInt64) Increment() int64 {
 	m.access.Lock()
 	defer m.access.Unlock()
+	if m.count < 0 {
+		m.count = 0
+	}
 	m.count++
 	return m.count
 }
 
-func (m *MinZeroAtomicUInt64) Decrement() uint64 {
-	m.access.Lock()
-	defer m.access.Unlock()
+func (m *MinZeroAtomicInt64) Decrement(useMutex bool) int64 {
+	if useMutex {
+		m.access.Lock()
+		defer m.access.Unlock()
+	}
 	if m.count > 0 {
 		m.count--
 	}
 	return m.count
 }
 
-func (m *MinZeroAtomicUInt64) Get() uint64 {
-	m.access.Lock()
-	defer m.access.Unlock()
+func (m *MinZeroAtomicInt64) Get(useMutex bool) int64 {
+	if useMutex {
+		m.access.Lock()
+		defer m.access.Unlock()
+	}
 	return m.count
 }
 
-func (m *MinZeroAtomicUInt64) Reset() uint64 {
+func (m *MinZeroAtomicInt64) Reset() int64 {
 	m.access.Lock()
 	defer m.access.Unlock()
 	m.count = 0
 	return m.count
+}
+func (m *MinZeroAtomicInt64) IncrementConditionReset(condition int64) bool {
+	m.access.Lock()
+	defer m.access.Unlock()
+	m.count++
+	if m.count >= condition {
+		m.count = 0
+		return true
+	}
+	return false
 }
