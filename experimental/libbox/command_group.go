@@ -68,6 +68,7 @@ func (s *CommandServer) handleGroupConn(conn net.Conn, onlyGroupItems bool) erro
 	ticker := time.NewTicker(time.Duration(interval))
 	defer ticker.Stop()
 	ctx := connKeepAlive(conn)
+	urlTestUpdateStream := s.urlTestUpdate.Observe()
 	for {
 		service := s.service
 		if service != nil {
@@ -89,7 +90,7 @@ func (s *CommandServer) handleGroupConn(conn net.Conn, onlyGroupItems bool) erro
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-s.urlTestUpdate:
+		case <-urlTestUpdateStream.Changes():
 		}
 	}
 }

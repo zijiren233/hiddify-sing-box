@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/imkira/go-observer"
 	"github.com/sagernet/sing-box/common/urltest"
 	"github.com/sagernet/sing-box/experimental/clashapi"
 	"github.com/sagernet/sing-box/log"
@@ -30,7 +31,7 @@ type CommandServer struct {
 	service    *BoxService
 
 	// These channels only work with a single client. if multi-client support is needed, replace with Subscriber/Observer
-	urlTestUpdate chan struct{}
+	urlTestUpdate observer.Property
 	modeUpdate    chan struct{}
 	logReset      chan struct{}
 }
@@ -46,7 +47,7 @@ func NewCommandServer(handler CommandServerHandler, maxLines int32) *CommandServ
 		handler:       handler,
 		maxLines:      int(maxLines),
 		subscriber:    observable.NewSubscriber[string](128),
-		urlTestUpdate: make(chan struct{}, 1),
+		urlTestUpdate: observer.NewProperty(0),
 		modeUpdate:    make(chan struct{}, 1),
 		logReset:      make(chan struct{}, 1),
 	}
@@ -69,10 +70,11 @@ func (s *CommandServer) SetService(newService *BoxService) {
 }
 
 func (s *CommandServer) notifyURLTestUpdate() {
-	select {
-	case s.urlTestUpdate <- struct{}{}:
-	default:
-	}
+	// select {
+	// case s.urlTestUpdate <- struct{}{}:
+	// default:
+	// }
+	s.urlTestUpdate.Update(1)
 }
 
 func (s *CommandServer) Start() error {
