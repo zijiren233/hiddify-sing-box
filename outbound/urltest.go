@@ -22,6 +22,9 @@ import (
 	"github.com/sagernet/sing/service/pause"
 )
 
+const TimeoutDelay = 65535
+const MinFailureToReset = 10
+
 var (
 	_ adapter.Outbound                = (*URLTest)(nil)
 	_ adapter.OutboundGroup           = (*URLTest)(nil)
@@ -146,9 +149,9 @@ func (s *URLTest) DialContext(ctx context.Context, network string, destination M
 		return s.group.interruptGroup.NewConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
 	}
 
-	if !s.group.pauseManager.IsNetworkPaused() && s.group.tcpConnectionFailureCount.IncrementConditionReset(10) {
+	if !s.group.pauseManager.IsNetworkPaused() && s.group.tcpConnectionFailureCount.IncrementConditionReset(MinFailureToReset) {
+		s.logger.Warn("TCP URLTest Outbound ", s.tag, " (", s.group.selectedOutboundTCP, ") failed to connect for ", MinFailureToReset, " times==> test proxies again!")
 		s.group.selectedOutboundTCP = nil
-		s.logger.Warn("TCP URLTest Outbound ", s.tag, " failed to connect for 10 times==> test proxies again!")
 		s.CheckOutbounds()
 	}
 
@@ -171,9 +174,9 @@ func (s *URLTest) ListenPacket(ctx context.Context, destination M.Socksaddr) (ne
 		s.group.udpConnectionFailureCount.Decrement(false)
 		return s.group.interruptGroup.NewPacketConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
 	}
-	if !s.group.pauseManager.IsNetworkPaused() && s.group.udpConnectionFailureCount.IncrementConditionReset(10) {
+	if !s.group.pauseManager.IsNetworkPaused() && s.group.udpConnectionFailureCount.IncrementConditionReset(MinFailureToReset) {
+		s.logger.Warn("UDP URLTest Outbound ", s.tag, " (", s.group.selectedOutboundUDP, ") failed to connect for ", MinFailureToReset, " times==> test proxies again!")
 		s.group.selectedOutboundUDP = nil
-		s.logger.Warn("UDP URLTest Outbound ", s.tag, " failed to connect for 10 times==> test proxies again!")
 		s.group.urlTest(ctx, true)
 	}
 	s.logger.ErrorContext(ctx, err)
@@ -311,7 +314,7 @@ func (g *URLTestGroup) Select(network string) (adapter.Outbound, bool) {
 			continue
 		}
 		history := g.history.LoadURLTestHistory(RealTag(detour))
-		if history == nil || history.Delay == 65535 {
+		if history == nil || history.Delay == TimeoutDelay {
 			continue
 		}
 		if minDelay == 0 || minDelay > history.Delay+g.tolerance || minDelay > history.Delay-g.tolerance && minTime.Before(history.Time) {
@@ -379,7 +382,7 @@ func (g *URLTestGroup) urlTest(ctx context.Context, force bool) (map[string]uint
 			continue
 		}
 		history := g.history.LoadURLTestHistory(realTag)
-		if !force && history != nil && time.Now().Sub(history.Time) < g.interval {
+		if !force && history != nil && history.Delay != TimeoutDelay && time.Now().Sub(history.Time) < g.interval {
 			continue
 		}
 		checked[realTag] = true
@@ -392,9 +395,9 @@ func (g *URLTestGroup) urlTest(ctx context.Context, force bool) (map[string]uint
 			defer cancel()
 			t, err := urltest.URLTest(ctx, g.link, p)
 			if err != nil {
-				g.logger.Debug("outbound ", tag, " unavailable (65535 ms): ", err)
+				g.logger.Debug("outbound ", tag, " unavailable (", TimeoutDelay, "ms): ", err)
 				// g.history.DeleteURLTestHistory(realTag)
-				t = 65535
+				t = TimeoutDelay
 			} else {
 				g.logger.Debug("outbound ", tag, " available: ", t, "ms")
 			}
