@@ -8,7 +8,6 @@ import (
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/urltest"
-	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/outbound"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -199,7 +198,7 @@ func writeGroups(writer io.Writer, boxService *BoxService, onlyGroupitems bool) 
 			if !isLoaded {
 				continue
 			}
-			if onlyGroupitems && itemOutbound.Type() != C.TypeSelector && itemOutbound.Type() != C.TypeURLTest && itemTag != group.Selected {
+			if onlyGroupitems && itemTag != group.Selected {
 				continue
 			}
 			var item OutboundGroupItem
