@@ -42,7 +42,6 @@ require (
 	github.com/sagernet/smux v0.0.0-20231208180855-7041f6ea79e7
 	github.com/sagernet/tfo-go v0.0.0-20231209031829-7b5343ac1dc6
 	github.com/sagernet/utls v1.5.4
-	github.com/sagernet/wireguard-go v0.0.0-20231215174105-89dec3b2f3e8
 	github.com/sagernet/ws v0.0.0-20231204124109-acfe8907c854
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
@@ -58,6 +57,8 @@ require (
 )
 
 //replace github.com/sagernet/sing => ../sing
+
+require github.com/sagernet/wireguard-go v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/ajg/form v1.5.1 // indirect
@@ -110,4 +111,4 @@ replace github.com/sagernet/sing-box/outbound/houtbound => ./outbound/houtbound
 
 replace github.com/sagernet/sing-box/option => ./option
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240213080057-78b635f7ef06

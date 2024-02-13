@@ -44,13 +44,15 @@ type WireGuard struct {
 	listener      N.Dialer
 	ipcConf       string
 
-	pauseManager  pause.Manager
-	pauseCallback *list.Element[pause.Callback]
-	bind          conn.Bind
-	device        *device.Device
-	tunDevice     wireguard.Device
-	hforwarder    *houtbound.Forwarder
-	fakePackets   []int
+	pauseManager     pause.Manager
+	pauseCallback    *list.Element[pause.Callback]
+	bind             conn.Bind
+	device           *device.Device
+	tunDevice        wireguard.Device
+	hforwarder       *houtbound.Forwarder
+	fakePackets      []int
+	fakePacketsSize  []int
+	fakePacketsDelay []int
 }
 
 func NewWireGuard(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.WireGuardOutboundOptions) (*WireGuard, error) {
@@ -69,15 +71,36 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 		pauseManager: service.FromContext[pause.Manager](ctx),
 		hforwarder:   hforwarder, //hiddify
 	}
-	fakePackets := []int{0, 0}
+	outbound.fakePackets = []int{0, 0}
+	outbound.fakePacketsSize = []int{0, 0}
+	outbound.fakePacketsDelay = []int{0, 0}
 	if options.FakePackets != "" {
 		var err error
-		fakePackets, err = option.ParseIntRange(options.FakePackets)
+		outbound.fakePackets, err = option.ParseIntRange(options.FakePackets)
 		if err != nil {
 			return nil, err
 		}
+		outbound.fakePacketsSize = []int{40, 100}
+		outbound.fakePacketsDelay = []int{200, 500}
+
+		if options.FakePacketsSize != "" {
+			var err error
+			outbound.fakePacketsSize, err = option.ParseIntRange(options.FakePacketsSize)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if options.FakePacketsDelay != "" {
+			var err error
+			outbound.fakePacketsDelay, err = option.ParseIntRange(options.FakePacketsDelay)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 	}
-	outbound.fakePackets = fakePackets
+
 	peers, err := wireguard.ParsePeers(options)
 	if err != nil {
 		return nil, err
@@ -154,7 +177,7 @@ func (w *WireGuard) Start() error {
 		Errorf: func(format string, args ...interface{}) {
 			w.logger.Error(fmt.Sprintf(strings.ToLower(format), args...))
 		},
-	}, w.workers, w.fakePackets)
+	}, w.workers, w.fakePackets, w.fakePacketsSize, w.fakePacketsDelay)
 	ipcConf := w.ipcConf
 	for _, peer := range w.peers {
 		ipcConf += peer.GenerateIpcLines()
