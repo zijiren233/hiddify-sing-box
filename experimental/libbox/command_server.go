@@ -75,7 +75,6 @@ func (s *CommandServer) notifyURLTestUpdate() {
 	// default:
 	// }
 	s.urlTestUpdate.Update(1)
-	log.Warn("Hiddify! URL Test Update")
 }
 
 func (s *CommandServer) Start() error {
