@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/imkira/go-observer"
+	"github.com/imkira/go-observer/v2"
 	"github.com/sagernet/sing-box/common/urltest"
 	"github.com/sagernet/sing-box/experimental/clashapi"
 	"github.com/sagernet/sing-box/log"
@@ -31,7 +31,7 @@ type CommandServer struct {
 	service    *BoxService
 
 	// These channels only work with a single client. if multi-client support is needed, replace with Subscriber/Observer
-	urlTestUpdate observer.Property
+	urlTestUpdate observer.Property[int]
 	modeUpdate    chan struct{}
 	logReset      chan struct{}
 }
@@ -75,6 +75,7 @@ func (s *CommandServer) notifyURLTestUpdate() {
 	// default:
 	// }
 	s.urlTestUpdate.Update(1)
+	log.Warn("Hiddify! URL Test Update")
 }
 
 func (s *CommandServer) Start() error {

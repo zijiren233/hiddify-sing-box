@@ -186,8 +186,8 @@ jobs:
       GOAMD64: ${{ matrix.goamd64 }}
       GOARM: ${{ matrix.goarm }}
       GOMIPS: ${{ matrix.gomips }}
-      CGO_ENABLED: 0
-      TAGS: with_clash_api,with_quic
+      CGO_ENABLED: 1
+      TAGS: with_gvisor,with_quic,with_wireguard,with_ech,with_utls,with_clash_api,with_grpc
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4

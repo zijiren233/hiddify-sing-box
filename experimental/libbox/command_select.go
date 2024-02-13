@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"net"
 
+	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/outbound"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/rw"
@@ -55,6 +56,7 @@ func (s *CommandServer) handleSelectOutbound(conn net.Conn) error {
 	if !selector.SelectOutbound(outboundTag) {
 		return writeError(conn, E.New("outbound not found in selector: ", outboundTag))
 	}
-	s.urlTestUpdate.Update(1)
+	log.Warn("Hiddify! Command Select", outboundTag)
+	s.urlTestUpdate.Update(2)
 	return writeError(conn, nil)
 }
