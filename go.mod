@@ -111,4 +111,4 @@ replace github.com/sagernet/sing-box/outbound/houtbound => ./outbound/houtbound
 
 replace github.com/sagernet/sing-box/option => ./option
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240213080057-78b635f7ef06
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240213121818-b8b1209e6081
