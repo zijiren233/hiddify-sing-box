@@ -136,12 +136,15 @@ func New(options Options) (*Box, error) {
 			tag,
 			outboundOptions)
 		if err != nil {
-			lastErrDesc = fmt.Sprintf("parse outbound[%d] \n\n%+v \n\n\nerror: %+v", i, out, err)     //hiddify
-			log := logFactory.NewLogger(F.ToString("outbound/", outboundOptions.Type, "[", tag, "]")) //hiddify
-			log.Error(lastErrDesc)                                                                    //hiddify
-			lastErr = err                                                                             //hiddify
-			out = outbound.NewBlock(log, tag)                                                         //hiddify
+			lastErrDesc = fmt.Sprintf("parse outbound[%d] error: %+v", i, err) //hiddify
+			fmt.Println(lastErrDesc)
+			lastErr = err //hiddify
+			out = outbound.NewInvalidConfig(
+				logFactory.NewLogger(F.ToString("outbound/", outboundOptions.Type, "[", tag, "]")),
+				tag,
+				err) //hiddify
 		}
+
 		outbounds = append(outbounds, out)
 	}
 	if len(outbounds) == 0 && lastErr != nil { //hiddify
