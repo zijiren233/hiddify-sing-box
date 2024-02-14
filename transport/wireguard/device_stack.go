@@ -192,9 +192,9 @@ func (w *StackDevice) Read(bufs [][]byte, sizes []int, offset int) (count int, e
 
 func (w *StackDevice) Write(bufs [][]byte, offset int) (count int, err error) {
 	for _, b := range bufs {
-		if len(b) <= offset {
-			continue
-		}
+		// if len(b) <= offset {
+		// 	continue
+		// }
 		b = b[offset:]
 		if len(b) == 0 {
 			continue
