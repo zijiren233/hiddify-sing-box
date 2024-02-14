@@ -49,7 +49,7 @@ require (
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/crypto v0.18.0
 	golang.org/x/net v0.20.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20230429144221-925a1e7659e6
 	google.golang.org/grpc v1.60.1
 	google.golang.org/protobuf v1.32.0
@@ -111,4 +111,4 @@ replace github.com/sagernet/sing-box/outbound/houtbound => ./outbound/houtbound
 
 replace github.com/sagernet/sing-box/option => ./option
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240213121818-b8b1209e6081
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240214104826-7403bff86dc6

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"runtime/debug"
 	"strings"
 
 	"github.com/sagernet/sing-box/adapter"
@@ -220,6 +221,9 @@ func (w *WireGuard) onPauseUpdated(event int) {
 }
 
 func (w *WireGuard) DialContext(ctx context.Context, network string, destination M.Socksaddr) (net.Conn, error) {
+	if r := recover(); r != nil {
+		fmt.Println("SWireguard error!", r, string(debug.Stack()))
+	}
 	switch network {
 	case N.NetworkTCP:
 		w.logger.InfoContext(ctx, "outbound connection to ", destination)
@@ -237,6 +241,9 @@ func (w *WireGuard) DialContext(ctx context.Context, network string, destination
 }
 
 func (w *WireGuard) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
+	if r := recover(); r != nil {
+		fmt.Println("SWireguard error!", r, string(debug.Stack()))
+	}
 	w.logger.InfoContext(ctx, "outbound packet connection to ", destination)
 	if destination.IsFqdn() {
 		destinationAddresses, err := w.router.LookupDefault(ctx, destination.Fqdn)

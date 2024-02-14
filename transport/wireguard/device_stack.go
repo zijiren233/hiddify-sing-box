@@ -18,7 +18,7 @@ import (
 	"github.com/sagernet/gvisor/pkg/tcpip/transport/icmp"
 	"github.com/sagernet/gvisor/pkg/tcpip/transport/tcp"
 	"github.com/sagernet/gvisor/pkg/tcpip/transport/udp"
-	"github.com/sagernet/sing-tun"
+	tun "github.com/sagernet/sing-tun"
 	"github.com/sagernet/sing/common/buf"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
@@ -192,6 +192,9 @@ func (w *StackDevice) Read(bufs [][]byte, sizes []int, offset int) (count int, e
 
 func (w *StackDevice) Write(bufs [][]byte, offset int) (count int, err error) {
 	for _, b := range bufs {
+		if len(b) <= offset {
+			continue
+		}
 		b = b[offset:]
 		if len(b) == 0 {
 			continue
