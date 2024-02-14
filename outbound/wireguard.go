@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/dialer"
@@ -54,7 +55,8 @@ type WireGuard struct {
 	fakePackets      []int
 	fakePacketsSize  []int
 	fakePacketsDelay []int
-	isClosed         bool
+	isClosed         bool        //hiddify
+	wgDependencies   []WireGuard //hidify
 }
 
 func NewWireGuard(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.WireGuardOutboundOptions) (*WireGuard, error) {
@@ -68,11 +70,12 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 			tag:          tag,
 			dependencies: withDialerDependency(options.DialerOptions),
 		},
-		ctx:          ctx,
-		workers:      options.Workers,
-		pauseManager: service.FromContext[pause.Manager](ctx),
-		hforwarder:   hforwarder, //hiddify
-		isClosed:     false,
+		ctx:            ctx,
+		workers:        options.Workers,
+		pauseManager:   service.FromContext[pause.Manager](ctx),
+		hforwarder:     hforwarder, //hiddify
+		isClosed:       false,
+		wgDependencies: []WireGuard{},
 	}
 	outbound.fakePackets = []int{0, 0}
 	outbound.fakePacketsSize = []int{0, 0}
@@ -191,6 +194,24 @@ func (w *WireGuard) Start() error {
 	}
 	w.device = wgDevice
 	w.pauseCallback = w.pauseManager.RegisterCallback(w.onPauseUpdated)
+
+	for _, d := range w.Dependencies() {
+		dep_out, ok := w.router.Outbound(d)
+		if !ok {
+			continue
+		}
+		if wgout, ok2 := dep_out.(*WireGuard); ok2 {
+			w.wgDependencies = append(w.wgDependencies, *wgout)
+		}
+	}
+
+	for _, wg := range w.wgDependencies {
+		for !wg.device.IsUp() { //not needed as singbox already handle it
+			w.logger.Warn("Dependency ", wg.Tag(), " is not up yet! Waiting.")
+			<-time.After(100 * time.Millisecond)
+		}
+	}
+
 	return w.tunDevice.Start()
 }
 
@@ -199,14 +220,8 @@ func (w *WireGuard) Close() error {
 		return nil
 	}
 	w.isClosed = true
-	for _, d := range w.Dependencies() {
-		dep_out, ok := w.router.Outbound(d)
-		if !ok {
-			continue
-		}
-		if wgout, ok2 := dep_out.(*WireGuard); ok2 {
-			wgout.Close()
-		}
+	for _, wgout := range w.wgDependencies {
+		wgout.Close()
 	}
 
 	if w.hforwarder != nil { //hiddify
@@ -223,19 +238,16 @@ func (w *WireGuard) Close() error {
 }
 
 func (w *WireGuard) InterfaceUpdated() {
+	for _, wgout := range w.wgDependencies {
+		wgout.InterfaceUpdated()
+	}
 	w.device.BindUpdate()
 	return
 }
 
 func (w *WireGuard) onPauseUpdated(event int) {
-	for _, d := range w.Dependencies() {
-		dep_out, ok := w.router.Outbound(d)
-		if !ok {
-			continue
-		}
-		if wgout, ok2 := dep_out.(*WireGuard); ok2 {
-			wgout.onPauseUpdated(event)
-		}
+	for _, wgout := range w.wgDependencies {
+		wgout.onPauseUpdated(event)
 	}
 	switch event {
 	case pause.EventDevicePaused:
@@ -249,6 +261,7 @@ func (w *WireGuard) DialContext(ctx context.Context, network string, destination
 	if r := recover(); r != nil {
 		fmt.Println("SWireguard error!", r, string(debug.Stack()))
 	}
+
 	switch network {
 	case N.NetworkTCP:
 		w.logger.InfoContext(ctx, "outbound connection to ", destination)
