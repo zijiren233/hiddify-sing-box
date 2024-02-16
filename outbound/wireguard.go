@@ -240,6 +240,7 @@ func (w *WireGuard) Close() error {
 }
 
 func (w *WireGuard) InterfaceUpdated() {
+	w.logger.Warn("Hiddify! Wirguard! Interface updated!1")
 	for _, wgout := range w.wgDependencies {
 		wgout.InterfaceUpdated()
 	}
@@ -247,12 +248,13 @@ func (w *WireGuard) InterfaceUpdated() {
 		return
 	}
 	w.lastUpdate = time.Now()
-	w.logger.Warn("Hiddify! Wirguard! Interface updated!")
+	w.logger.Warn("Hiddify! Wirguard! Interface updated!2")
 	w.device.BindUpdate()
 	return
 }
 
 func (w *WireGuard) onPauseUpdated(event int) {
+	w.logger.Warn("Hiddify! Wirguard! on Pause updated!1")
 	for _, wgout := range w.wgDependencies {
 		wgout.onPauseUpdated(event)
 	}
@@ -260,7 +262,7 @@ func (w *WireGuard) onPauseUpdated(event int) {
 		return
 	}
 	w.lastUpdate = time.Now()
-	w.logger.Warn("Hiddify! Wirguard! on Pause updated!")
+	w.logger.Warn("Hiddify! Wirguard! on Pause updated!2")
 	switch event {
 	case pause.EventDevicePaused:
 		w.device.Down()
