@@ -57,6 +57,7 @@ type WireGuard struct {
 	fakePacketsDelay []int
 	isClosed         bool        //hiddify
 	wgDependencies   []WireGuard //hidify
+	lastUpdate       time.Time
 }
 
 func NewWireGuard(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.WireGuardOutboundOptions) (*WireGuard, error) {
@@ -76,6 +77,7 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 		hforwarder:     hforwarder, //hiddify
 		isClosed:       false,
 		wgDependencies: []WireGuard{},
+		lastUpdate:     time.Now(),
 	}
 	outbound.fakePackets = []int{0, 0}
 	outbound.fakePacketsSize = []int{0, 0}
@@ -241,6 +243,11 @@ func (w *WireGuard) InterfaceUpdated() {
 	for _, wgout := range w.wgDependencies {
 		wgout.InterfaceUpdated()
 	}
+	if time.Since(w.lastUpdate) < 50*time.Millisecond {
+		return
+	}
+	w.lastUpdate = time.Now()
+	w.logger.Warn("Hiddify! Wirguard! Interface updated!")
 	w.device.BindUpdate()
 	return
 }
@@ -249,6 +256,11 @@ func (w *WireGuard) onPauseUpdated(event int) {
 	for _, wgout := range w.wgDependencies {
 		wgout.onPauseUpdated(event)
 	}
+	if time.Since(w.lastUpdate) < 50*time.Millisecond {
+		return
+	}
+	w.lastUpdate = time.Now()
+	w.logger.Warn("Hiddify! Wirguard! on Pause updated!")
 	switch event {
 	case pause.EventDevicePaused:
 		w.device.Down()
