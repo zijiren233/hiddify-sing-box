@@ -3,6 +3,7 @@ package route
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/netip"
 	"net/url"
@@ -49,53 +50,54 @@ import (
 var _ adapter.Router = (*Router)(nil)
 
 type Router struct {
-	ctx                                context.Context
-	logger                             log.ContextLogger
-	dnsLogger                          log.ContextLogger
-	inboundByTag                       map[string]adapter.Inbound
-	outbounds                          []adapter.Outbound
-	outboundByTag                      map[string]adapter.Outbound
-	rules                              []adapter.Rule
-	defaultDetour                      string
-	defaultOutboundForConnection       adapter.Outbound
-	defaultOutboundForPacketConnection adapter.Outbound
-	needGeoIPDatabase                  bool
-	needGeositeDatabase                bool
-	geoIPOptions                       option.GeoIPOptions
-	geositeOptions                     option.GeositeOptions
-	geoIPReader                        *geoip.Reader
-	geositeReader                      *geosite.Reader
-	geositeCache                       map[string]adapter.Rule
-	needFindProcess                    bool
-	dnsClient                          *dns.Client
-	defaultDomainStrategy              dns.DomainStrategy
-	dnsRules                           []adapter.DNSRule
-	staticDns                          map[string]StaticDNSEntry //Hiddify
-	ruleSets                           []adapter.RuleSet
-	ruleSetMap                         map[string]adapter.RuleSet
-	defaultTransport                   dns.Transport
-	transports                         []dns.Transport
-	transportMap                       map[string]dns.Transport
-	transportDomainStrategy            map[dns.Transport]dns.DomainStrategy
-	dnsReverseMapping                  *DNSReverseMapping
-	fakeIPStore                        adapter.FakeIPStore
-	interfaceFinder                    myInterfaceFinder
-	autoDetectInterface                bool
-	defaultInterface                   string
-	defaultMark                        int
-	networkMonitor                     tun.NetworkUpdateMonitor
-	interfaceMonitor                   tun.DefaultInterfaceMonitor
-	packageManager                     tun.PackageManager
-	processSearcher                    process.Searcher
-	timeService                        *ntp.Service
-	pauseManager                       pause.Manager
-	clashServer                        adapter.ClashServer
-	v2rayServer                        adapter.V2RayServer
-	platformInterface                  platform.Interface
-	needWIFIState                      bool
-	needPackageManager                 bool
-	wifiState                          adapter.WIFIState
-	started                            bool
+	ctx                                  context.Context
+	logger                               log.ContextLogger
+	dnsLogger                            log.ContextLogger
+	inboundByTag                         map[string]adapter.Inbound
+	outbounds                            []adapter.Outbound
+	sortedOutboundsByDependenciesHiddify []adapter.Outbound//hiddify
+	outboundByTag                        map[string]adapter.Outbound
+	rules                                []adapter.Rule
+	defaultDetour                        string
+	defaultOutboundForConnection         adapter.Outbound
+	defaultOutboundForPacketConnection   adapter.Outbound
+	needGeoIPDatabase                    bool
+	needGeositeDatabase                  bool
+	geoIPOptions                         option.GeoIPOptions
+	geositeOptions                       option.GeositeOptions
+	geoIPReader                          *geoip.Reader
+	geositeReader                        *geosite.Reader
+	geositeCache                         map[string]adapter.Rule
+	needFindProcess                      bool
+	dnsClient                            *dns.Client
+	defaultDomainStrategy                dns.DomainStrategy
+	dnsRules                             []adapter.DNSRule
+	staticDns                            map[string]StaticDNSEntry //Hiddify
+	ruleSets                             []adapter.RuleSet
+	ruleSetMap                           map[string]adapter.RuleSet
+	defaultTransport                     dns.Transport
+	transports                           []dns.Transport
+	transportMap                         map[string]dns.Transport
+	transportDomainStrategy              map[dns.Transport]dns.DomainStrategy
+	dnsReverseMapping                    *DNSReverseMapping
+	fakeIPStore                          adapter.FakeIPStore
+	interfaceFinder                      myInterfaceFinder
+	autoDetectInterface                  bool
+	defaultInterface                     string
+	defaultMark                          int
+	networkMonitor                       tun.NetworkUpdateMonitor
+	interfaceMonitor                     tun.DefaultInterfaceMonitor
+	packageManager                       tun.PackageManager
+	processSearcher                      process.Searcher
+	timeService                          *ntp.Service
+	pauseManager                         pause.Manager
+	clashServer                          adapter.ClashServer
+	v2rayServer                          adapter.V2RayServer
+	platformInterface                    platform.Interface
+	needWIFIState                        bool
+	needPackageManager                   bool
+	wifiState                            adapter.WIFIState
+	started                              bool
 }
 
 func NewRouter(
@@ -436,6 +438,7 @@ func (r *Router) Initialize(inbounds []adapter.Inbound, outbounds []adapter.Outb
 			return E.New("outbound not found for rule[", i, "]: ", rule.Outbound())
 		}
 	}
+	r.doSortOutboundsByDependencies()
 	return nil
 }
 
@@ -1184,7 +1187,7 @@ func (r *Router) ResetNetwork() error {
 	r.logger.Warn("Hiddify!Reseting Network")
 	conntrack.Close()
 
-	for _, outbound := range r.outbounds {
+	for _, outbound := range r.sortedOutboundsByDependenciesHiddify {
 		listener, isListener := outbound.(adapter.InterfaceUpdateListener)
 		if isListener {
 			listener.InterfaceUpdated()
@@ -1206,4 +1209,32 @@ func (r *Router) updateWIFIState() {
 		r.wifiState = state
 		r.logger.Info("updated WIFI state: SSID=", state.SSID, ", BSSID=", state.BSSID)
 	}
+}
+func (r *Router) SortedOutboundsByDependenciesHiddify() []adapter.Outbound { //hiddify
+	for i, out := range r.sortedOutboundsByDependenciesHiddify {
+		fmt.Printf("SSSS %d %+v", i, out)
+		fmt.Printf("SSSS %d %s", i, out.Tag())
+	}
+	return r.sortedOutboundsByDependenciesHiddify
+}
+func (r *Router) doSortOutboundsByDependencies() {
+	started := make(map[string]bool)
+
+	var appendOutbounds func(out adapter.Outbound)
+	appendOutbounds = func(out adapter.Outbound) {
+		if started[out.Tag()] {
+			return
+		}
+
+		for _, d := range out.Dependencies() {
+			appendOutbounds(r.outboundByTag[d])
+		}
+		r.sortedOutboundsByDependenciesHiddify = append(r.sortedOutboundsByDependenciesHiddify, out)
+		started[out.Tag()] = true
+	}
+
+	for _, outboundToStart := range r.outbounds {
+		appendOutbounds(outboundToStart)
+	}
+
 }

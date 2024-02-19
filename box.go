@@ -353,14 +353,14 @@ func (s *Box) Close() error {
 		monitor.Finish()
 	}
 	for i, in := range s.inbounds {
-		monitor.Start("close inbound/", in.Type(), "[", i, "]")
+		monitor.Start("close inbound/", in.Type(), "[", in.Tag(), "]")
 		errors = E.Append(errors, in.Close(), func(err error) error {
 			return E.Cause(err, "close inbound/", in.Type(), "[", i, "]")
 		})
 		monitor.Finish()
 	}
-	for i, out := range s.outbounds {
-		monitor.Start("close outbound/", out.Type(), "[", i, "]")
+	for i, out := range s.Router().SortedOutboundsByDependenciesHiddify() {
+		monitor.Start("close outbound/", out.Type(), "[", out.Tag(), "]")
 		errors = E.Append(errors, common.Close(out), func(err error) error {
 			return E.Cause(err, "close outbound/", out.Type(), "[", i, "]")
 		})

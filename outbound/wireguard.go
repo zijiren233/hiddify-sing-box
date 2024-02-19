@@ -55,8 +55,6 @@ type WireGuard struct {
 	fakePackets      []int
 	fakePacketsSize  []int
 	fakePacketsDelay []int
-	isClosed         bool        //hiddify
-	wgDependencies   []WireGuard //hidify
 	lastUpdate       time.Time
 }
 
@@ -71,13 +69,10 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 			tag:          tag,
 			dependencies: withDialerDependency(options.DialerOptions),
 		},
-		ctx:            ctx,
-		workers:        options.Workers,
-		pauseManager:   service.FromContext[pause.Manager](ctx),
-		hforwarder:     hforwarder, //hiddify
-		isClosed:       false,
-		wgDependencies: []WireGuard{},
-		lastUpdate:     time.Now(),
+		ctx:          ctx,
+		workers:      options.Workers,
+		pauseManager: service.FromContext[pause.Manager](ctx),
+		hforwarder:   hforwarder, //hiddify
 	}
 	outbound.fakePackets = []int{0, 0}
 	outbound.fakePacketsSize = []int{0, 0}
@@ -197,35 +192,10 @@ func (w *WireGuard) Start() error {
 	w.device = wgDevice
 	w.pauseCallback = w.pauseManager.RegisterCallback(w.onPauseUpdated)
 
-	for _, d := range w.Dependencies() {
-		dep_out, ok := w.router.Outbound(d)
-		if !ok {
-			continue
-		}
-		if wgout, ok2 := dep_out.(*WireGuard); ok2 {
-			w.wgDependencies = append(w.wgDependencies, *wgout)
-		}
-	}
-
-	for _, wg := range w.wgDependencies {
-		for !wg.device.IsUp() { //not needed as singbox already handle it
-			w.logger.Warn("Dependency ", wg.Tag(), " is not up yet! Waiting.")
-			<-time.After(100 * time.Millisecond)
-		}
-	}
-
 	return w.tunDevice.Start()
 }
 
 func (w *WireGuard) Close() error {
-	if w.isClosed {
-		return nil
-	}
-	w.isClosed = true
-	for _, wgout := range w.wgDependencies {
-		wgout.Close()
-	}
-
 	if w.hforwarder != nil { //hiddify
 		w.hforwarder.Close() //hiddify
 	} //hiddify
@@ -241,28 +211,12 @@ func (w *WireGuard) Close() error {
 
 func (w *WireGuard) InterfaceUpdated() {
 	w.logger.Warn("Hiddify! Wirguard! Interface updated!1")
-	for _, wgout := range w.wgDependencies {
-		wgout.InterfaceUpdated()
-	}
-	if time.Since(w.lastUpdate) < 50*time.Millisecond {
-		return
-	}
-	w.lastUpdate = time.Now()
-	w.logger.Warn("Hiddify! Wirguard! Interface updated!2")
 	w.device.BindUpdate()
 	return
 }
 
 func (w *WireGuard) onPauseUpdated(event int) {
-	w.logger.Warn("Hiddify! Wirguard! on Pause updated!1")
-	for _, wgout := range w.wgDependencies {
-		wgout.onPauseUpdated(event)
-	}
-	if time.Since(w.lastUpdate) < 50*time.Millisecond {
-		return
-	}
-	w.lastUpdate = time.Now()
-	w.logger.Warn("Hiddify! Wirguard! on Pause updated!2")
+	w.logger.Warn("Hiddify! Wirguard! on Pause updated! event=", event)
 	switch event {
 	case pause.EventDevicePaused:
 		w.device.Down()
