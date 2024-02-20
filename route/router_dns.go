@@ -132,7 +132,7 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 	ctx, cancel := context.WithTimeout(ctx, C.DNSTimeout)
 	defer cancel()
 
-	addrs, err := lookupStaticIP(domain, strategy, r.staticDns)
+	addrs, err := r.lookupStaticIP(domain, strategy)
 	if addrs == nil || err != nil {
 		addrs, err = r.dnsClient.Lookup(ctx, transport, domain, strategy)
 	}

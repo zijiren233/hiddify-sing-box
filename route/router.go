@@ -344,7 +344,7 @@ func NewRouter(
 	}
 
 	for domain, tag := range checkDNSLoopDomain {
-		addrs, err := lookupStaticIP(domain, dns.DomainStrategyAsIS, router.staticDns)
+		addrs, err := router.lookupStaticIP(domain, dns.DomainStrategyAsIS)
 		if err == nil && addrs != nil && len(addrs) != 0 {
 			continue
 		}

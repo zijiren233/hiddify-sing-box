@@ -45,9 +45,8 @@ func errorIfEmpty(addrs []netip.Addr) ([]netip.Addr, error) {
 	}
 	return addrs, nil
 }
-func lookupStaticIP(domain string, strategy uint8, entries map[string]StaticDNSEntry) ([]netip.Addr, error) {
-
-	if staticDns, ok := entries[domain]; ok {
+func (router *Router) lookupStaticIP(domain string, strategy uint8) ([]netip.Addr, error) {
+	if staticDns, ok := router.staticDns[domain]; ok {
 
 		switch strategy {
 		case dns.DomainStrategyUseIPv4:
@@ -79,24 +78,25 @@ func lookupStaticIP(domain string, strategy uint8, entries map[string]StaticDNSE
 			}
 			return []netip.Addr{ipaddr}, nil
 		}
-		if strings.Contains(domain, ",") {
-			entry := StaticDNSEntry{}
-			for _, ipString := range strings.Split(domain, ",") {
-				ip, err := netip.ParseAddr(ipString)
-				if err != nil {
-					fmt.Printf("Invalid IP address for domain %s: %s\n", domain, ipString)
-					continue
-				}
+		// if strings.Contains(domain, ",") {
+		// 	entry := StaticDNSEntry{}
+		// 	for _, ipString := range strings.Split(domain, ",") {
+		// 		ip, err := netip.ParseAddr(ipString)
+		// 		if err != nil {
+		// 			fmt.Printf("Invalid IP address for domain %s: %s\n", domain, ipString)
+		// 			continue
+		// 		}
 
-				if ip.Is4() {
-					entry.IPv4 = append(entry.IPv4, ip)
-				} else {
-					entry.IPv6 = append(entry.IPv6, ip)
-				}
-			}
-			entries[domain] = entry
-			return lookupStaticIP(domain, strategy, entries)
-		}
+		// 		if ip.Is4() {
+		// 			entry.IPv4 = append(entry.IPv4, ip)
+		// 		} else {
+		// 			entry.IPv6 = append(entry.IPv6, ip)
+		// 		}
+		// 	}
+		// 	fmt.Println("Adding ",domain, entry)
+		// 	router.staticDns[domain] = entry
+		// 	return router.lookupStaticIP(domain, strategy)
+		// }
 		return nil, fmt.Errorf("NotFound")
 	}
 
