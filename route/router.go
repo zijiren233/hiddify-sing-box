@@ -3,7 +3,7 @@ package route
 import (
 	"context"
 	"errors"
-	"fmt"
+
 	"net"
 	"net/netip"
 	"net/url"
@@ -55,7 +55,7 @@ type Router struct {
 	dnsLogger                            log.ContextLogger
 	inboundByTag                         map[string]adapter.Inbound
 	outbounds                            []adapter.Outbound
-	sortedOutboundsByDependenciesHiddify []adapter.Outbound//hiddify
+	sortedOutboundsByDependenciesHiddify []adapter.Outbound //hiddify
 	outboundByTag                        map[string]adapter.Outbound
 	rules                                []adapter.Rule
 	defaultDetour                        string
@@ -1211,10 +1211,6 @@ func (r *Router) updateWIFIState() {
 	}
 }
 func (r *Router) SortedOutboundsByDependenciesHiddify() []adapter.Outbound { //hiddify
-	for i, out := range r.sortedOutboundsByDependenciesHiddify {
-		fmt.Printf("SSSS %d %+v", i, out)
-		fmt.Printf("SSSS %d %s", i, out.Tag())
-	}
 	return r.sortedOutboundsByDependenciesHiddify
 }
 func (r *Router) doSortOutboundsByDependencies() {

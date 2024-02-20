@@ -107,8 +107,4 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box/outbound/houtbound => ./outbound/houtbound
-
-replace github.com/sagernet/sing-box/option => ./option
-
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240214142457-fadc619f4357
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240220121742-1a490b435a70
