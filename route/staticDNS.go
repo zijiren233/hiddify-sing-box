@@ -30,7 +30,7 @@ func createEntries(items map[string][]string) map[string]StaticDNSEntry {
 			if ip.Is4() {
 				entry.IPv4 = append(entry.IPv4, ip)
 			} else {
-				entry.IPv4 = append(entry.IPv6, ip)
+				entry.IPv6 = append(entry.IPv6, ip)
 			}
 		}
 		entries[domain] = entry
@@ -78,6 +78,24 @@ func lookupStaticIP(domain string, strategy uint8, entries map[string]StaticDNSE
 				return nil, err
 			}
 			return []netip.Addr{ipaddr}, nil
+		}
+		if strings.Contains(domain, ",") {
+			entry := StaticDNSEntry{}
+			for _, ipString := range strings.Split(domain, ",") {
+				ip, err := netip.ParseAddr(ipString)
+				if err != nil {
+					fmt.Printf("Invalid IP address for domain %s: %s\n", domain, ipString)
+					continue
+				}
+
+				if ip.Is4() {
+					entry.IPv4 = append(entry.IPv4, ip)
+				} else {
+					entry.IPv6 = append(entry.IPv6, ip)
+				}
+			}
+			entries[domain] = entry
+			return lookupStaticIP(domain, strategy, entries)
 		}
 		return nil, fmt.Errorf("NotFound")
 	}
