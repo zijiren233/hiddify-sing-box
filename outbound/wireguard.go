@@ -171,6 +171,7 @@ func (w *WireGuard) Start() error {
 			reserved = w.peers[0].Reserved
 		}
 		bind = wireguard.NewClientBind(w.ctx, w, w.listener, isConnect, connectAddr, reserved)
+		fmt.Println("==========wireguard.NewClientBind(", w.ctx, w, w.listener, isConnect, connectAddr, reserved)
 	}
 
 	wgDevice := device.NewDevice(w.tunDevice, bind, &device.Logger{
@@ -211,9 +212,21 @@ func (w *WireGuard) Close() error {
 
 func (w *WireGuard) InterfaceUpdated() {
 	w.logger.Warn("Hiddify! Wirguard! Interface updated!1")
-	err := w.device.BindUpdate()
-	if err != nil {
-		w.logger.Error("Hiddify! Updating wireguard interface failed", err)
+	// err := w.device.BindUpdate()
+	// if err != nil {
+	// 	w.logger.Error("Hiddify! bind update failed", err)
+	// }
+	e1 := w.device.Down()
+	if e1 != nil {
+		w.logger.Error("Hiddify! downing wireguard interface failed", e1)
+	}
+	w.logger.Warn("Hiddify! uping.... wireguard interface", e1)
+	e2 := w.device.Up()
+	if e2 != nil {
+		w.logger.Error("Hiddify! Uping wireguard interface failed", e2)
+	} else {
+		w.logger.Warn("Hiddify! OK!Updating wireguard interface", e1, e2)
+
 	}
 	return
 }
