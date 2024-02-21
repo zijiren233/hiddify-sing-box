@@ -216,12 +216,12 @@ func (w *WireGuard) InterfaceUpdated() {
 	// if err != nil {
 	// 	w.logger.Error("Hiddify! bind update failed", err)
 	// }
-	e1 := w.device.Down()
+	e1 := w.Close()
 	if e1 != nil {
 		w.logger.Error("Hiddify! downing wireguard interface failed", e1)
 	}
 	w.logger.Warn("Hiddify! uping.... wireguard interface", e1)
-	e2 := w.device.Up()
+	e2 := w.Start()
 	if e2 != nil {
 		w.logger.Error("Hiddify! Uping wireguard interface failed", e2)
 	} else {
