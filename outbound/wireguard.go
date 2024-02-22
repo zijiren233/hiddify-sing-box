@@ -171,7 +171,6 @@ func (w *WireGuard) Start() error {
 			reserved = w.peers[0].Reserved
 		}
 		bind = wireguard.NewClientBind(w.ctx, w, w.listener, isConnect, connectAddr, reserved)
-		fmt.Println("==========wireguard.NewClientBind(", w.ctx, w, w.listener, isConnect, connectAddr, reserved)
 	}
 
 	wgDevice := device.NewDevice(w.tunDevice, bind, &device.Logger{
@@ -212,21 +211,25 @@ func (w *WireGuard) Close() error {
 
 func (w *WireGuard) InterfaceUpdated() {
 	w.logger.Warn("Hiddify! Wirguard! Interface updated!1")
-	// err := w.device.BindUpdate()
-	// if err != nil {
-	// 	w.logger.Error("Hiddify! bind update failed", err)
-	// }
-	e1 := w.Close()
-	if e1 != nil {
-		w.logger.Error("Hiddify! downing wireguard interface failed", e1)
-	}
-	w.logger.Warn("Hiddify! uping.... wireguard interface", e1)
-	e2 := w.Start()
-	if e2 != nil {
-		w.logger.Error("Hiddify! Uping wireguard interface failed", e2)
-	} else {
-		w.logger.Warn("Hiddify! OK!Updating wireguard interface", e1, e2)
+	err := w.device.BindUpdate()
+	// err := fmt.Errorf("Hiddify! downing wireguard interface failed")
 
+	if err != nil {
+		w.logger.Error("Hiddify! bind update failed", err)
+		e1 := w.device.Down()
+		if e1 != nil {
+			w.logger.Error("Hiddify! downing wireguard interface failed", e1)
+		}
+		w.logger.Warn("Hiddify! uping.... wireguard interface")
+		e2 := w.device.Up()
+		if e2 != nil {
+			w.logger.Error("Hiddify! Uping wireguard interface failed", e2)
+		} else {
+			w.logger.Warn("Hiddify! OK!Updating wireguard interface")
+
+		}
+	} else {
+		w.logger.Warn("Hiddify! OK2!Updating wireguard interface")
 	}
 	return
 }
@@ -250,6 +253,9 @@ func (w *WireGuard) DialContext(ctx context.Context, network string, destination
 	if r := recover(); r != nil {
 		fmt.Println("SWireguard error!", r, string(debug.Stack()))
 	}
+	if !w.device.IsUp() {
+		return nil, E.New("Interface is not ready yet")
+	}
 
 	switch network {
 	case N.NetworkTCP:
@@ -270,6 +276,9 @@ func (w *WireGuard) DialContext(ctx context.Context, network string, destination
 func (w *WireGuard) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
 	if r := recover(); r != nil {
 		fmt.Println("SWireguard error!", r, string(debug.Stack()))
+	}
+	if !w.device.IsUp() {
+		return nil, E.New("Interface is not ready yet")
 	}
 	w.logger.InfoContext(ctx, "outbound packet connection to ", destination)
 	if destination.IsFqdn() {

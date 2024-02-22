@@ -107,4 +107,4 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240220184421-1831c84ddbf9
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240222105640-5d1ea2848503

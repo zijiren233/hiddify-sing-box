@@ -88,8 +88,9 @@ func (c *ClientBind) connect() (*wireConn, error) {
 func (c *ClientBind) Open(port uint16) (fns []conn.ReceiveFunc, actualPort uint16, err error) {
 	select {
 	case <-c.done:
-		err = net.ErrClosed
-		return
+		// err = net.ErrClosed
+		// return
+		c.done = make(chan struct{})
 	default:
 	}
 	return []conn.ReceiveFunc{c.receive}, 0, nil
@@ -141,7 +142,7 @@ func (c *ClientBind) Close() error {
 	}
 	select {
 	case <-c.done:
-		return net.ErrClosed
+		// return net.ErrClosed
 	default:
 		close(c.done)
 	}
