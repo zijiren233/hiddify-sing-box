@@ -327,10 +327,17 @@ func NewRouter(
 			}
 			interfaceMonitor.RegisterCallback(router.notifyNetworkUpdate)
 			router.interfaceMonitor = interfaceMonitor
+			// go func() {
+			// 	<-time.After(10 * time.Second)
+			// 	router.notifyNetworkUpdate(3)
+			// 	<-time.After(10 * time.Second)
+			// 	router.notifyNetworkUpdate(3)
+			// }()
 		}
 	} else {
 		interfaceMonitor := platformInterface.CreateDefaultInterfaceMonitor(router.logger)
 		interfaceMonitor.RegisterCallback(router.notifyNetworkUpdate)
+
 		router.interfaceMonitor = interfaceMonitor
 	}
 
@@ -1180,7 +1187,7 @@ func (r *Router) notifyNetworkUpdate(event int) {
 		return
 	}
 
-	_ = r.ResetNetwork()
+	go r.ResetNetwork()
 }
 
 func (r *Router) ResetNetwork() error {
