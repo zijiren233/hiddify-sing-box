@@ -20,7 +20,7 @@ import (
 
 func main() {
 	options := option.Options{}
-	content, err := os.ReadFile("./htest/warp.json")
+	content, err := os.ReadFile("./htest/a.json")
 	json.Unmarshal(content, &options)
 	fmt.Println(string(content))
 	libbox.Setup("./htest/", "./htest/", "./htest/tmp/", true)
@@ -34,6 +34,7 @@ func main() {
 		Options: options,
 	})
 	if err != nil {
+		fmt.Println(err)
 		cancel()
 		return
 	}
@@ -48,10 +49,11 @@ func main() {
 	)
 	// instance.Start()
 	libservice.Start()
-
+	<-time.After(100 * time.Second)
 	commandServer.SetService(&libservice)
 	<-time.Tick(1 * time.Second)
 	fmt.Println("command group update")
+	// pm:=service.FromContext[pause.Manager](ctx)
 
 	groupInfoOnlyClient := libbox.NewCommandClient(
 		&CommandClientHandler{
@@ -85,14 +87,14 @@ func main() {
 	<-time.Tick(2000 * time.Millisecond)
 	fmt.Println("===========selecting final auto")
 	libbox.NewStandaloneCommandClient().SelectOutbound("Select", "Auto")
-
+	fmt.Println("===========Closing")
 	instance.Close()
 	instance.Close()
 	libservice.Close()
 	commandServer.Close()
 	<-time.After(1 * time.Second)
 	options = option.Options{}
-	content, err = os.ReadFile("./htest/yebekhe.json")
+	content, err = os.ReadFile("./htest/a.json")
 	json.Unmarshal(content, &options)
 	fmt.Println(string(content))
 	libbox.Setup("./htest/", "./htest/", "./htest/", true)
@@ -120,7 +122,8 @@ func main() {
 	libservice.Start()
 
 	commandServer.SetService(&libservice)
-	<-time.Tick(1 * time.Second)
+
+	<-time.Tick(100 * time.Second)
 	fmt.Println("command group update")
 
 	groupInfoOnlyClient = libbox.NewCommandClient(

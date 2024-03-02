@@ -450,6 +450,9 @@ func (r *Router) Initialize(inbounds []adapter.Inbound, outbounds []adapter.Outb
 }
 
 func (r *Router) Outbounds() []adapter.Outbound {
+	if !r.started {
+		return nil
+	}
 	return r.outbounds
 }
 
@@ -592,13 +595,12 @@ func (r *Router) Start() error {
 			}
 		}
 	}
-	if needWIFIStateFromRuleSet || r.needWIFIState {
+	if (needWIFIStateFromRuleSet || r.needWIFIState) && r.platformInterface != nil {
 		monitor.Start("initialize WIFI state")
-		if r.platformInterface != nil && r.interfaceMonitor != nil {
-			r.interfaceMonitor.RegisterCallback(func(_ int) {
-				r.updateWIFIState()
-			})
-		}
+		r.needWIFIState = true
+		r.interfaceMonitor.RegisterCallback(func(_ int) {
+			r.updateWIFIState()
+		})
 		r.updateWIFIState()
 		monitor.Finish()
 	}
@@ -746,6 +748,10 @@ func (r *Router) FakeIPStore() adapter.FakeIPStore {
 func (r *Router) RuleSet(tag string) (adapter.RuleSet, bool) {
 	ruleSet, loaded := r.ruleSetMap[tag]
 	return ruleSet, loaded
+}
+
+func (r *Router) NeedWIFIState() bool {
+	return r.needWIFIState
 }
 
 func (r *Router) RouteConnection(ctx context.Context, conn net.Conn, metadata adapter.InboundContext) error {
@@ -1214,7 +1220,11 @@ func (r *Router) updateWIFIState() {
 	state := r.platformInterface.ReadWIFIState()
 	if state != r.wifiState {
 		r.wifiState = state
-		r.logger.Info("updated WIFI state: SSID=", state.SSID, ", BSSID=", state.BSSID)
+		if state.SSID == "" && state.BSSID == "" {
+			r.logger.Info("updated WIFI state: disconnected")
+		} else {
+			r.logger.Info("updated WIFI state: SSID=", state.SSID, ", BSSID=", state.BSSID)
+		}
 	}
 }
 func (r *Router) SortedOutboundsByDependenciesHiddify() []adapter.Outbound { //hiddify

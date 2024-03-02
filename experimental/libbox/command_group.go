@@ -58,8 +58,7 @@ func (c *CommandClient) handleGroupConn(conn net.Conn) {
 	}
 }
 
-func (s *CommandServer) handleGroupConn(conn net.Conn, onlyGroupItems bool) error {
-	defer conn.Close()
+func (s *CommandServer) handleGroupConn(conn net.Conn) error {
 	var interval int64
 	err := binary.Read(conn, binary.BigEndian, &interval)
 	if err != nil {
@@ -289,7 +288,6 @@ func (c *CommandClient) SetGroupExpand(groupTag string, isExpand bool) error {
 }
 
 func (s *CommandServer) handleSetGroupExpand(conn net.Conn) error {
-	defer conn.Close()
 	groupTag, err := rw.ReadVString(conn)
 	if err != nil {
 		return err
