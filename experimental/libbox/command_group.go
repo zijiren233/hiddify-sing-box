@@ -8,7 +8,6 @@ import (
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/urltest"
-	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/outbound"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/rw"
@@ -91,8 +90,9 @@ func (s *CommandServer) handleGroupConn(conn net.Conn, onlyGroupItems bool) erro
 			return ctx.Err()
 		case <-urlTestUpdateStream.Changes():
 			for urlTestUpdateStream.HasNext() {
-				val := urlTestUpdateStream.Next()
-				log.Trace("Hiddify! Receive a change for group info ", val)
+				urlTestUpdateStream.Next()
+				// val := urlTestUpdateStream.Next()
+				// log.Trace("Hiddify! Receive a change for group info ", val)
 			}
 		}
 	}
