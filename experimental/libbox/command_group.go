@@ -58,7 +58,7 @@ func (c *CommandClient) handleGroupConn(conn net.Conn) {
 	}
 }
 
-func (s *CommandServer) handleGroupConn(conn net.Conn) error {
+func (s *CommandServer) handleGroupConn(conn net.Conn, onlyGroupItems bool) error {
 	var interval int64
 	err := binary.Read(conn, binary.BigEndian, &interval)
 	if err != nil {
