@@ -1067,7 +1067,7 @@ func (r *Router) InterfaceFinder() control.InterfaceFinder {
 }
 
 func (r *Router) UpdateInterfaces() error {
-	r.logger.Warn("Hiddify!UpdateInterfaces ")
+	r.logger.Info("Hiddify!UpdateInterfaces ")
 	if r.platformInterface == nil || !r.platformInterface.UsePlatformInterfaceGetter() {
 		return r.interfaceFinder.update()
 	} else {
@@ -1170,7 +1170,7 @@ func (r *Router) NewError(ctx context.Context, err error) {
 }
 
 func (r *Router) notifyNetworkUpdate(event int) {
-	r.logger.Warn("Hiddify!notifyNetworkUpdate ", event)
+	r.logger.Info("Hiddify!notifyNetworkUpdate ", event)
 	if event == tun.EventNoRoute {
 		r.pauseManager.NetworkPause()
 		r.logger.Error("missing default interface")
@@ -1197,7 +1197,7 @@ func (r *Router) notifyNetworkUpdate(event int) {
 }
 
 func (r *Router) ResetNetwork() error {
-	r.logger.Warn("Hiddify!Reseting Network")
+	r.logger.Info("Hiddify!Reseting Network")
 	conntrack.Close()
 
 	for _, outbound := range r.sortedOutboundsByDependenciesHiddify {

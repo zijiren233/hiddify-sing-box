@@ -210,7 +210,7 @@ func (w *WireGuard) Close() error {
 }
 
 func (w *WireGuard) InterfaceUpdated() {
-	w.logger.Warn("Hiddify! Wirguard! Interface updated!XXX")
+	w.logger.Info("Hiddify! Wirguard! Interface updated!XXX")
 	// <-time.After(10 * time.Millisecond)
 	// if true {
 	// 	return
@@ -265,7 +265,7 @@ func (w *WireGuard) InterfaceUpdated() {
 }
 
 func (w *WireGuard) onPauseUpdated(event int) {
-	w.logger.Warn("Hiddify! Wirguard! on Pause updated! event=", event)
+	w.logger.Info("Hiddify! Wirguard! on Pause updated! event=", event)
 	// <-time.After(1000 * time.Millisecond)
 	switch event {
 
@@ -273,13 +273,13 @@ func (w *WireGuard) onPauseUpdated(event int) {
 		w.device.Down()
 	case pause.EventNetworkPause: //hiddify already handled in Interface Updated
 		err := w.device.Down()
-		w.logger.Warn("Hiddify! Wirguard! downing net! err=", err)
+		w.logger.Info("Hiddify! Wirguard! downing net! err=", err)
 		<-time.After(50 * time.Millisecond)
 	case pause.EventDeviceWake:
 		w.device.Up()
 	case pause.EventNetworkWake: //hiddify already handled in Interface Updated
 		err := w.device.Up()
-		w.logger.Warn("Hiddify! Wirguard! Uping net! err=", err)
+		w.logger.Info("Hiddify! Wirguard! Uping net! err=", err)
 		<-time.After(50 * time.Millisecond)
 	}
 }
