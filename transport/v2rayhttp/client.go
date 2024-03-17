@@ -77,6 +77,14 @@ func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, opt
 	if !strings.HasPrefix(requestURL.Path, "/") {
 		requestURL.Path = "/" + requestURL.Path
 	}
+	headers := options.Headers.Build()
+	if host := headers.Get("Host"); host != "" {
+		headers.Del("Host")
+		requestURL.Host = host
+	}
+	if headers.Get("User-Agent") == "" {
+		headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+	}
 	return &Client{
 		ctx:        ctx,
 		dialer:     dialer,
@@ -84,7 +92,7 @@ func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, opt
 		requestURL: requestURL,
 		host:       options.Host,
 		method:     options.Method,
-		headers:    options.Headers.Build(),
+		headers:    headers,
 		transport:  transport,
 		http2:      tlsConfig != nil,
 	}, nil

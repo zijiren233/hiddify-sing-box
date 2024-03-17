@@ -63,6 +63,11 @@ func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, opt
 	for key, value := range options.Headers {
 		headers[key] = value
 	}
+
+	if headers.Get("User-Agent") == "" {
+		headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+	}
+	
 	return &Client{
 		dialer:     dialer,
 		tlsConfig:  tlsConfig,
