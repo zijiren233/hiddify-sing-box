@@ -91,6 +91,7 @@ func (c *ClientBind) Open(port uint16) (fns []conn.ReceiveFunc, actualPort uint1
 	case <-c.done:
 		// err = net.ErrClosed
 		// return
+
 		c.done = make(chan struct{})
 	default:
 	}
