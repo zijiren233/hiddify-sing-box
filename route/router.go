@@ -28,10 +28,10 @@ import (
 	"github.com/sagernet/sing-box/outbound"
 	"github.com/sagernet/sing-box/transport/fakeip"
 
-	"github.com/sagernet/sing-dns"
-	"github.com/sagernet/sing-mux"
-	"github.com/sagernet/sing-tun"
-	"github.com/sagernet/sing-vmess"
+	dns "github.com/sagernet/sing-dns"
+	mux "github.com/sagernet/sing-mux"
+	tun "github.com/sagernet/sing-tun"
+	vmess "github.com/sagernet/sing-vmess"
 
 	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/buf"
@@ -53,55 +53,55 @@ import (
 var _ adapter.Router = (*Router)(nil)
 
 type Router struct {
-	ctx                                context.Context
-	logger                             log.ContextLogger
-	dnsLogger                          log.ContextLogger
-	inboundByTag                       map[string]adapter.Inbound
-	outbounds                          []adapter.Outbound
+	ctx                                  context.Context
+	logger                               log.ContextLogger
+	dnsLogger                            log.ContextLogger
+	inboundByTag                         map[string]adapter.Inbound
+	outbounds                            []adapter.Outbound
 	sortedOutboundsByDependenciesHiddify []adapter.Outbound //hiddify
-	outboundByTag                      map[string]adapter.Outbound
-	rules                              []adapter.Rule
-	defaultDetour                      string
-	defaultOutboundForConnection       adapter.Outbound
-	defaultOutboundForPacketConnection adapter.Outbound
-	needGeoIPDatabase                  bool
-	needGeositeDatabase                bool
-	geoIPOptions                       option.GeoIPOptions
-	geositeOptions                     option.GeositeOptions
-	geoIPReader                        *geoip.Reader
-	geositeReader                      *geosite.Reader
-	geositeCache                       map[string]adapter.Rule
-	needFindProcess                    bool
-	dnsClient                          *dns.Client
+	outboundByTag                        map[string]adapter.Outbound
+	rules                                []adapter.Rule
+	defaultDetour                        string
+	defaultOutboundForConnection         adapter.Outbound
+	defaultOutboundForPacketConnection   adapter.Outbound
+	needGeoIPDatabase                    bool
+	needGeositeDatabase                  bool
+	geoIPOptions                         option.GeoIPOptions
+	geositeOptions                       option.GeositeOptions
+	geoIPReader                          *geoip.Reader
+	geositeReader                        *geosite.Reader
+	geositeCache                         map[string]adapter.Rule
+	needFindProcess                      bool
+	dnsClient                            *dns.Client
 	staticDns                            map[string]StaticDNSEntry //Hiddify
-	defaultDomainStrategy              dns.DomainStrategy
-	dnsRules                           []adapter.DNSRule
-	ruleSets                           []adapter.RuleSet
-	ruleSetMap                         map[string]adapter.RuleSet
-	defaultTransport                   dns.Transport
-	transports                         []dns.Transport
-	transportMap                       map[string]dns.Transport
-	transportDomainStrategy            map[dns.Transport]dns.DomainStrategy
-	dnsReverseMapping                  *DNSReverseMapping
-	fakeIPStore                        adapter.FakeIPStore
-	interfaceFinder                    *control.DefaultInterfaceFinder
-	autoDetectInterface                bool
-	defaultInterface                   string
-	defaultMark                        int
-	networkMonitor                     tun.NetworkUpdateMonitor
-	interfaceMonitor                   tun.DefaultInterfaceMonitor
-	packageManager                     tun.PackageManager
-	powerListener                      winpowrprof.EventListener
-	processSearcher                    process.Searcher
-	timeService                        *ntp.Service
-	pauseManager                       pause.Manager
-	clashServer                        adapter.ClashServer
-	v2rayServer                        adapter.V2RayServer
-	platformInterface                  platform.Interface
-	needWIFIState                      bool
-	needPackageManager                 bool
-	wifiState                          adapter.WIFIState
-	started                            bool
+	defaultDomainStrategy                dns.DomainStrategy
+	dnsRules                             []adapter.DNSRule
+	ruleSets                             []adapter.RuleSet
+	ruleSetMap                           map[string]adapter.RuleSet
+	defaultTransport                     dns.Transport
+	transports                           []dns.Transport
+	transportMap                         map[string]dns.Transport
+	transportDomainStrategy              map[dns.Transport]dns.DomainStrategy
+	dnsReverseMapping                    *DNSReverseMapping
+	fakeIPStore                          adapter.FakeIPStore
+	interfaceFinder                      *control.DefaultInterfaceFinder
+	autoDetectInterface                  bool
+	defaultInterface                     string
+	defaultMark                          int
+	networkMonitor                       tun.NetworkUpdateMonitor
+	interfaceMonitor                     tun.DefaultInterfaceMonitor
+	packageManager                       tun.PackageManager
+	powerListener                        winpowrprof.EventListener
+	processSearcher                      process.Searcher
+	timeService                          *ntp.Service
+	pauseManager                         pause.Manager
+	clashServer                          adapter.ClashServer
+	v2rayServer                          adapter.V2RayServer
+	platformInterface                    platform.Interface
+	needWIFIState                        bool
+	needPackageManager                   bool
+	wifiState                            adapter.WIFIState
+	started                              bool
 }
 
 func NewRouter(
@@ -406,7 +406,7 @@ func NewRouter(
 		}
 		ctx, metadata := adapter.AppendContext(ctx)
 		metadata.Domain = domain
-		ctx, dnstransport, _ := router.matchDNS(ctx, false)
+		ctx, dnstransport, _, _, _ := router.matchDNS(ctx, false, 0)
 
 		if dnstransport != nil && dnstransport.Name() == tag {
 			return nil, E.New("Dns Loop Detected[", tag, "]")
@@ -1315,7 +1315,7 @@ func (r *Router) doSortOutboundsByDependencies() {
 	for _, outboundToStart := range r.outbounds {
 		appendOutbounds(outboundToStart)
 	}
-
+}
 
 func (r *Router) notifyWindowsPowerEvent(event int) {
 	switch event {
