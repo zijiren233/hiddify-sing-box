@@ -9,6 +9,7 @@ import (
 
 	"github.com/sagernet/sing-box/adapter"
 	C "github.com/sagernet/sing-box/constant"
+
 	//"github.com/sagernet/sing-box/log"
 	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/cache"
@@ -212,8 +213,10 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 		}
 		dnsCtx, cancel = context.WithTimeout(dnsCtx, C.DNSTimeout)
 		responseAddrs, err := r.lookupStaticIP(domain, strategy)
-		
-		if (responseAddrs == nil || err != nil) &&( rule != nil && rule.WithAddressLimit()) {
+
+		if err == nil && responseAddrs != nil {
+			r.dnsLogger.DebugContext(ctx, "Static IP responsefor ", domain, " ", responseAddrs)
+		} else if rule != nil && rule.WithAddressLimit() {
 			addressLimit = true
 			responseAddrs, err = r.dnsClient.LookupWithResponseCheck(dnsCtx, transport, domain, strategy, func(responseAddrs []netip.Addr) bool {
 				metadata.DestinationAddresses = responseAddrs
@@ -245,7 +248,7 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 	defer cancel()
 
 	responseAddrs = r.filterBlocked(ctx, domain, strategy, responseAddrs)
-	
+
 	if len(responseAddrs) > 0 {
 		r.dnsLogger.InfoContext(ctx, "lookup succeed for ", domain, ": ", strings.Join(F.MapToString(responseAddrs), " "))
 	} else if err != nil {
