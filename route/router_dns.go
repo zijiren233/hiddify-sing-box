@@ -212,7 +212,7 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 			strategy = transportStrategy
 		}
 		dnsCtx, cancel = context.WithTimeout(dnsCtx, C.DNSTimeout)
-		responseAddrs, err := r.lookupStaticIP(domain, strategy)
+		responseAddrs, err = r.lookupStaticIP(domain, strategy)
 
 		if err == nil && responseAddrs != nil {
 			r.dnsLogger.DebugContext(ctx, "Static IP responsefor ", domain, " ", responseAddrs)
