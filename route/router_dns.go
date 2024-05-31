@@ -214,8 +214,8 @@ func (r *Router) Lookup(ctx context.Context, domain string, strategy dns.DomainS
 		dnsCtx, cancel = context.WithTimeout(dnsCtx, C.DNSTimeout)
 		responseAddrs, err = r.lookupStaticIP(domain, strategy)
 
-		if err == nil && responseAddrs != nil {
-			r.dnsLogger.DebugContext(ctx, "Static IP responsefor ", domain, " ", responseAddrs)
+		if err == nil && responseAddrs != nil && len(responseAddrs) > 0 {
+			r.dnsLogger.DebugContext(ctx, "Static IP responsefor ", domain, " ", responseAddrs[0])
 		} else if rule != nil && rule.WithAddressLimit() {
 			addressLimit = true
 			responseAddrs, err = r.dnsClient.LookupWithResponseCheck(dnsCtx, transport, domain, strategy, func(responseAddrs []netip.Addr) bool {
