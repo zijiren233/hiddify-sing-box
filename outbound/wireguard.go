@@ -20,8 +20,8 @@ import (
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing-box/outbound/houtbound"
 	"github.com/sagernet/sing-box/transport/wireguard"
-	"github.com/sagernet/sing-dns"
-	"github.com/sagernet/sing-tun"
+	dns "github.com/sagernet/sing-dns"
+	tun "github.com/sagernet/sing-tun"
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
@@ -56,6 +56,7 @@ type WireGuard struct {
 	fakePackets      []int
 	fakePacketsSize  []int
 	fakePacketsDelay []int
+	fakePacketsMode  string
 	lastUpdate       time.Time
 }
 
@@ -78,6 +79,7 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 	outbound.fakePackets = []int{0, 0}
 	outbound.fakePacketsSize = []int{0, 0}
 	outbound.fakePacketsDelay = []int{0, 0}
+	outbound.fakePacketsMode = options.FakePacketsMode
 	if options.FakePackets != "" {
 		var err error
 		outbound.fakePackets, err = option.ParseIntRange(options.FakePackets)
@@ -85,7 +87,7 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 			return nil, err
 		}
 		outbound.fakePacketsSize = []int{40, 100}
-		outbound.fakePacketsDelay = []int{200, 500}
+		outbound.fakePacketsDelay = []int{10, 50}
 
 		if options.FakePacketsSize != "" {
 			var err error
@@ -102,7 +104,6 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 				return nil, err
 			}
 		}
-
 	}
 
 	peers, err := wireguard.ParsePeers(options)
@@ -200,7 +201,12 @@ func (w *WireGuard) start() error {
 		Errorf: func(format string, args ...interface{}) {
 			w.logger.Error(fmt.Sprintf(strings.ToLower(format), args...))
 		},
-	}, w.workers, w.fakePackets, w.fakePacketsSize, w.fakePacketsDelay)
+	}, w.workers)
+	wgDevice.FakePackets = w.fakePackets
+	wgDevice.FakePacketsSize = w.fakePacketsSize
+	wgDevice.FakePacketsDelays = w.fakePacketsDelay
+	wgDevice.FakePacketsMode = w.fakePacketsMode
+
 	ipcConf := w.ipcConf
 	for _, peer := range w.peers {
 		ipcConf += peer.GenerateIpcLines()
