@@ -22,7 +22,57 @@ import (
 	"github.com/sagernet/sing/common/uot"
 	"github.com/sagernet/sing/protocol/socks"
 	"github.com/xtls/xray-core/core"
-	_ "github.com/xtls/xray-core/main/distro/all"
+
+	// Mandatory features. Can't remove unless there are replacements.
+	_ "github.com/xtls/xray-core/app/dispatcher"
+	_ "github.com/xtls/xray-core/app/proxyman/inbound"
+	_ "github.com/xtls/xray-core/app/proxyman/outbound"
+
+	// Fix dependency cycle caused by core import in internet package
+	_ "github.com/xtls/xray-core/transport/internet/tagged/taggedimpl"
+	// Inbound and outbound proxies.
+	// _ "github.com/xtls/xray-core/proxy/blackhole"
+	// _ "github.com/xtls/xray-core/proxy/dns"
+	_ "github.com/xtls/xray-core/proxy/dokodemo"
+	_ "github.com/xtls/xray-core/proxy/freedom"
+
+	// _ "github.com/xtls/xray-core/proxy/http"
+	// _ "github.com/xtls/xray-core/proxy/loopback"
+	// _ "github.com/xtls/xray-core/proxy/shadowsocks"
+	// _ "github.com/xtls/xray-core/proxy/socks"
+	_ "github.com/xtls/xray-core/proxy/trojan"
+	// _ "github.com/xtls/xray-core/proxy/vless/inbound"
+	_ "github.com/xtls/xray-core/proxy/vless/outbound"
+	// _ "github.com/xtls/xray-core/proxy/vmess/inbound"
+	_ "github.com/xtls/xray-core/proxy/vmess/outbound"
+	// _ "github.com/xtls/xray-core/proxy/wireguard"
+
+	// Transports
+	_ "github.com/xtls/xray-core/transport/internet/domainsocket"
+	_ "github.com/xtls/xray-core/transport/internet/grpc"
+	_ "github.com/xtls/xray-core/transport/internet/http"
+	_ "github.com/xtls/xray-core/transport/internet/httpupgrade"
+	_ "github.com/xtls/xray-core/transport/internet/kcp"
+	_ "github.com/xtls/xray-core/transport/internet/quic"
+	_ "github.com/xtls/xray-core/transport/internet/reality"
+	_ "github.com/xtls/xray-core/transport/internet/splithttp"
+	_ "github.com/xtls/xray-core/transport/internet/tcp"
+	_ "github.com/xtls/xray-core/transport/internet/tls"
+	_ "github.com/xtls/xray-core/transport/internet/udp"
+	_ "github.com/xtls/xray-core/transport/internet/websocket"
+
+	// Transport headers
+	_ "github.com/xtls/xray-core/transport/internet/headers/http"
+	_ "github.com/xtls/xray-core/transport/internet/headers/noop"
+	_ "github.com/xtls/xray-core/transport/internet/headers/srtp"
+	_ "github.com/xtls/xray-core/transport/internet/headers/tls"
+	_ "github.com/xtls/xray-core/transport/internet/headers/utp"
+	_ "github.com/xtls/xray-core/transport/internet/headers/wechat"
+
+	// _ "github.com/xtls/xray-core/transport/internet/headers/wireguard"
+
+	// JSON
+	_ "github.com/xtls/xray-core/main/json"
 )
 
 var _ adapter.Outbound = (*Xray)(nil)
@@ -59,7 +109,8 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 				"port":     port,
 				"protocol": "socks",
 				"settings": map[string]any{
-					"udp": true,
+					"udp":  true,
+					"auth": "password",
 					"accounts": []any{
 						map[string]any{
 							"user": userpass,
@@ -103,7 +154,8 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 			tag:          tag,
 			dependencies: withDialerDependency(options.DialerOptions),
 		},
-		client:       socks.NewClient(outboundDialer, socksNet, socks.Version5, userpass, userpass),
+		client: socks.NewClient(outboundDialer, socksNet, socks.Version5, userpass, userpass),
+		// client:       socks.NewClient(outboundDialer, socksNet, socks.Version5, "", ""),
 		resolve:      false,
 		xrayInstance: server,
 	}
