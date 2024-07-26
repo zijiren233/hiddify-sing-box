@@ -87,11 +87,15 @@ type Xray struct {
 
 func getRandomFreePort() uint16 {
 	for {
-		port := rand.Intn(35535) + 30000 // range 30000 to 65535
-		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		port := rand.Intn(25535) + 30000 // range 30000 to 65535
+		l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 		if err == nil {
 			l.Close()
-			return uint16(port)
+			l, err := net.Listen("udp", fmt.Sprintf("127.0.0.1:%d", port))
+			if err == nil {
+				l.Close()
+				return uint16(port)
+			}
 		}
 	}
 }
