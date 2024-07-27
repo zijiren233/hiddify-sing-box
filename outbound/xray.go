@@ -84,6 +84,7 @@ type Xray struct {
 	resolve      bool
 	uotClient    *uot.Client
 	xrayInstance *core.Instance
+	proxyStr     string
 }
 
 func getRandomFreePort() uint16 {
@@ -158,7 +159,10 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 		},
 		"outbounds": outbounds,
 	}
-
+	protocol, ok := outbounds[0]["protocol"].(string)
+	if !ok {
+		return nil, fmt.Errorf("incorrect protocol")
+	}
 	jsonData, err := json.MarshalIndent(xray, "", "  ")
 	if err != nil {
 		fmt.Printf("Error marshaling to JSON: %v", err)
@@ -195,6 +199,7 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 		// client:       socks.NewClient(outboundDialer, socksNet, socks.Version5, "", ""),
 		resolve:      false,
 		xrayInstance: server,
+		proxyStr:     "X" + protocol,
 	}
 	uotOptions := common.PtrValueOrDefault(options.UDPOverTCP)
 	if uotOptions.Enabled {
@@ -278,5 +283,5 @@ func (w *Xray) Close() error {
 }
 
 func (w *Xray) Type() string {
-	return "Xray"
+	return w.proxyStr
 }
