@@ -205,7 +205,36 @@ func (w *WireGuard) start() error {
 	wgDevice.FakePackets = w.fakePackets
 	wgDevice.FakePacketsSize = w.fakePacketsSize
 	wgDevice.FakePacketsDelays = w.fakePacketsDelay
-	wgDevice.FakePacketsMode = w.fakePacketsMode
+	mode := strings.ToLower(w.fakePacketsMode)
+	if mode == "" || mode == "m1" {
+		wgDevice.FakePacketsHeader = []byte{}
+		wgDevice.FakePacketsNoModify = false
+	} else if mode == "m2" {
+		wgDevice.FakePacketsHeader = []byte{}
+		wgDevice.FakePacketsNoModify = true
+	} else if mode == "m3" {
+		// clist := []byte{0xC0, 0xC2, 0xC3, 0xC4, 0xC9, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF}
+		wgDevice.FakePacketsHeader = []byte{0xDC, 0xDE, 0xD3, 0xD9, 0xD0, 0xEC, 0xEE, 0xE3}
+		wgDevice.FakePacketsNoModify = false
+	} else if mode == "m4" {
+		wgDevice.FakePacketsHeader = []byte{0xDC, 0xDE, 0xD3, 0xD9, 0xD0, 0xEC, 0xEE, 0xE3}
+		wgDevice.FakePacketsNoModify = true
+	} else if mode == "m5" {
+		wgDevice.FakePacketsHeader = []byte{0xC0, 0xC2, 0xC3, 0xC4, 0xC9, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF}
+		wgDevice.FakePacketsNoModify = false
+	} else if mode == "m6" {
+		wgDevice.FakePacketsHeader = []byte{0x40, 0x42, 0x43, 0x44, 0x49, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F}
+		wgDevice.FakePacketsNoModify = true
+	} else if strings.HasPrefix(mode, "h") || strings.HasPrefix(mode, "g") {
+		clist, err := hex.DecodeString(strings.ReplaceAll(mode[1:], "_", ""))
+		if err != nil {
+			return err
+		}
+		wgDevice.FakePacketsHeader = clist
+		wgDevice.FakePacketsNoModify = strings.HasPrefix(mode, "h")
+	} else {
+		return fmt.Errorf("incorrect packet mode: %s", mode)
+	}
 
 	ipcConf := w.ipcConf
 	for _, peer := range w.peers {
