@@ -128,7 +128,7 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 			"protocol": "freedom",
 			"settings": map[string]any{
 				"domainStrategy": "AsIs",
-				"fragment": options.Fragment,
+				"fragment":       options.Fragment,
 			},
 			"streamSettings": map[string]any{
 				"sockopt": map[string]any{
