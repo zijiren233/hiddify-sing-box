@@ -14,6 +14,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
+
 	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -91,7 +92,7 @@ func getRandomFreePort() uint16 {
 		l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 		if err == nil {
 			l.Close()
-			l, err := net.Listen("udp", fmt.Sprintf("127.0.0.1:%d", port))
+			l, err := net.ListenPacket("udp", fmt.Sprintf("127.0.0.1:%d", port))
 			if err == nil {
 				l.Close()
 				return uint16(port)
@@ -106,6 +107,33 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 	}
 	userpass := newuuid.String()
 	port := getRandomFreePort()
+	outbounds := []map[string]any{options.XrayOutboundJson}
+	outbounds[0]["sockopt"] = map[string]any{}
+	if options.Fragment != nil {
+		outbounds[0]["sockopt"] = map[string]any{
+			"dialerProxy":      "fragment",
+			"tcpKeepAliveIdle": 100,
+			"tcpNoDelay":       true,
+		}
+		outbounds = append(outbounds, map[string]any{
+			"tag":      "fragment",
+			"protocol": "freedom",
+			"settings": map[string]any{
+				"domainStrategy": "AsIs",
+				"fragment": map[string]any{
+					"packets":  options.Fragment.Packets,
+					"length":   options.Fragment.Length,
+					"interval": options.Fragment.Interval,
+				},
+			},
+			"streamSettings": map[string]any{
+				"sockopt": map[string]any{
+					"tcpKeepAliveIdle": 100,
+					"tcpNoDelay":       true,
+				},
+			},
+		})
+	}
 	xray := map[string]any{
 		"inbounds": []any{
 			map[string]any{
@@ -124,8 +152,9 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 				},
 			},
 		},
-		"outbounds": []any{options.XrayOutboundJson},
+		"outbounds": outbounds,
 	}
+
 	jsonData, err := json.MarshalIndent(xray, "", "  ")
 	if err != nil {
 		fmt.Printf("Error marshaling to JSON: %v", err)
