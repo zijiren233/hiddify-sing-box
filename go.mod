@@ -104,7 +104,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 // indirect
 	github.com/v2fly/ss-bloomring v0.0.0-20210312155135-28617310f63e // indirect
-	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230316163032-ced5aaba43e3 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	github.com/xtls/reality v0.0.0-20240712055506-48f0b2d5ed6d // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
@@ -116,14 +115,13 @@ require (
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
-	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
-	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gvisor.dev/gvisor v0.0.0-20231202080848-1f7806d17489 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240717205116-b0de5e908866
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
+
+replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240727184702-fcf01338c17a
