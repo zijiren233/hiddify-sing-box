@@ -107,24 +107,28 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 	}
 	userpass := newuuid.String()
 	port := getRandomFreePort()
-	outbounds := []map[string]any{options.XrayOutboundJson}
-	outbounds[0]["sockopt"] = map[string]any{}
-	if options.Fragment != nil {
-		outbounds[0]["sockopt"] = map[string]any{
-			"dialerProxy":      "fragment",
-			"tcpKeepAliveIdle": 100,
-			"tcpNoDelay":       true,
+	outbounds := []map[string]any{}
+	if options.XrayOutboundJson != nil {
+		xrayconf := *options.XrayOutboundJson
+		if options.Fragment == nil {
+			xrayconf["sockopt"] = map[string]any{}
+		} else {
+			xrayconf["sockopt"] = map[string]any{
+				"dialerProxy":      "fragment",
+				"tcpKeepAliveIdle": 100,
+				"tcpNoDelay":       true,
+			}
 		}
+		outbounds = append(outbounds, xrayconf)
+	}
+
+	if options.Fragment != nil {
 		outbounds = append(outbounds, map[string]any{
 			"tag":      "fragment",
 			"protocol": "freedom",
 			"settings": map[string]any{
 				"domainStrategy": "AsIs",
-				"fragment": map[string]any{
-					"packets":  options.Fragment.Packets,
-					"length":   options.Fragment.Length,
-					"interval": options.Fragment.Interval,
-				},
+				"fragment": options.Fragment,
 			},
 			"streamSettings": map[string]any{
 				"sockopt": map[string]any{
