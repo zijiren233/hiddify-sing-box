@@ -111,7 +111,7 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 	outbounds := []map[string]any{}
 	if options.XrayOutboundJson != nil {
 		xrayconf := *options.XrayOutboundJson
-		if options.Fragment == nil {
+		if options.Fragment == nil || options.Fragment.Packets == "" {
 			xrayconf["sockopt"] = map[string]any{}
 		} else {
 			xrayconf["sockopt"] = map[string]any{
@@ -123,7 +123,7 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 		outbounds = append(outbounds, xrayconf)
 	}
 
-	if options.Fragment != nil {
+	if options.Fragment != nil && options.Fragment.Packets != "" {
 		outbounds = append(outbounds, map[string]any{
 			"tag":      "fragment",
 			"protocol": "freedom",
@@ -139,7 +139,11 @@ func NewXray(ctx context.Context, router adapter.Router, logger log.ContextLogge
 			},
 		})
 	}
+
 	xray := map[string]any{
+		"log": map[string]any{
+			"loglevel": options.LogLevel,
+		},
 		"inbounds": []any{
 			map[string]any{
 				"listen":   "127.0.0.1",

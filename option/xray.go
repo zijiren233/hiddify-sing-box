@@ -8,4 +8,5 @@ type XrayOutboundOptions struct {
 	UDPOverTCP       *UDPOverTCPOptions `json:"udp_over_tcp,omitempty"`
 	XrayOutboundJson *map[string]any    `json:"xray_outbound_raw"`
 	Fragment         *conf.Fragment     `json:"xray_fragment"`
+	LogLevel         string             `json:"xray_loglevel"`
 }
