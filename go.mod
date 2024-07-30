@@ -124,4 +124,4 @@ require (
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
 
-replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240727184702-fcf01338c17a
+replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240729110224-c3df022f042a
