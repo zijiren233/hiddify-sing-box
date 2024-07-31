@@ -423,8 +423,8 @@ func (g *URLTestGroup) urlTest(ctx context.Context, force bool) (map[string]uint
 			})
 			resultAccess.Lock()
 			result[tag] = t
-			resultAccess.Unlock()
 			g.performUpdateCheck()
+			resultAccess.Unlock()
 
 			return nil, nil
 		})
