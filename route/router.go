@@ -397,7 +397,7 @@ func NewRouter(
 		}
 		ctx, metadata := adapter.AppendContext(ctx)
 		metadata.Domain = domain
-		ctx, dnstransport, _, _, _ := router.matchDNS(ctx, false, 0)
+		ctx, dnstransport, _, _, _ := router.matchDNS(ctx, false, 0,true)
 
 		if dnstransport != nil && dnstransport.Name() == tag {
 			return nil, E.New("Dns Loop Detected[", tag, "]")
