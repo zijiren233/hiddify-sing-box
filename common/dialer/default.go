@@ -13,6 +13,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
+	"github.com/zijiren233/gwst/ws"
 )
 
 var _ WireGuardListener = (*DefaultDialer)(nil)
@@ -26,6 +27,8 @@ type DefaultDialer struct {
 	udpAddr4            string
 	udpAddr6            string
 	isWireGuardListener bool
+
+	wsTunnelOptions option.WsTunnelOptions
 }
 
 func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDialer, error) {
@@ -112,7 +115,7 @@ func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDi
 	}
 
 	var tlsFragment *TLSFragment = nil
-	if options.TLSFragment != nil && options.TLSFragment.Enabled {
+	if options.TLSFragment.Enabled {
 		tlsFragment = &TLSFragment{}
 		if options.TCPFastOpen {
 			return nil, E.New("TLS Fragmentation is not compatible with TCP Fast Open, set `tcp_fast_open` to `false` in your outbound if you intend to enable TLS fragmentation.")
@@ -120,7 +123,6 @@ func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDi
 		tlsFragment.Enabled = true
 
 		sleep, err := option.Parse2IntRange(options.TLSFragment.Sleep)
-
 		if err != nil {
 			return nil, E.Cause(err, "invalid TLS fragment sleep period supplied")
 		}
@@ -155,12 +157,18 @@ func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDi
 		udpAddr4,
 		udpAddr6,
 		options.IsWireGuardListener,
+		options.WsTunnelOptions,
 	}, nil
 }
 
 func (d *DefaultDialer) DialContext(ctx context.Context, network string, address M.Socksaddr) (net.Conn, error) {
 	if !address.IsValid() {
 		return nil, E.New("invalid address")
+	}
+	if d.wsTunnelOptions.Enabled {
+		return ws.NewDialer(address.String(), d.wsTunnelOptions.Path,
+			ws.WithDialTLS(d.wsTunnelOptions.ServerName, d.wsTunnelOptions.Insecure),
+		).DialContext(ctx, network)
 	}
 	switch N.NetworkName(network) {
 	case N.NetworkUDP:
