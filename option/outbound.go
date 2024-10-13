@@ -140,6 +140,9 @@ type WsTunnelOptions struct {
 	Tls        bool   `json:"tls,omitempty"`
 	ServerName string `json:"server_name,omitempty"`
 	Insecure   bool   `json:"insecure,omitempty"`
+
+	Target      string `json:"target,omitempty"`
+	NamedTarget string `json:"named_target,omitempty"`
 }
 
 func (o *DialerOptions) TakeDialerOptions() DialerOptions {

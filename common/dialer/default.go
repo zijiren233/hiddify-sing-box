@@ -189,9 +189,12 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network string, address
 		}
 		port := strconv.Itoa(rand.Intn(65535-1024) + 1024)
 		listen := fmt.Sprintf("127.0.0.1:%s", port)
-		f := ws.NewForwarder(listen,
+		f := ws.NewForwarder(
+			listen,
 			ws.NewDialer(address.String(), d.wsTunnelOptions.Path,
 				ws.WithDialTLS(d.wsTunnelOptions.ServerName, d.wsTunnelOptions.Insecure),
+				ws.WithTarget(d.wsTunnelOptions.Target),
+				ws.WithNamedTarget(d.wsTunnelOptions.NamedTarget),
 			),
 			ws.WithDisableTCP(),
 		)
@@ -212,9 +215,12 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network string, address
 	}
 	port := strconv.Itoa(rand.Intn(65535-1024) + 1024)
 	listen := fmt.Sprintf("127.0.0.1:%s", port)
-	f := ws.NewForwarder(listen,
+	f := ws.NewForwarder(
+		listen,
 		ws.NewDialer(address.String(), d.wsTunnelOptions.Path,
 			ws.WithDialTLS(d.wsTunnelOptions.ServerName, d.wsTunnelOptions.Insecure),
+			ws.WithTarget(d.wsTunnelOptions.Target),
+			ws.WithNamedTarget(d.wsTunnelOptions.NamedTarget),
 		),
 		ws.WithDisableUDP(),
 	)
