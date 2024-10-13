@@ -63,7 +63,7 @@ require (
 
 require (
 	github.com/sagernet/wireguard-go v0.0.0-00010101000000-000000000000
-	github.com/zijiren233/gwst v0.1.2
+	github.com/zijiren233/gwst v0.1.3
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 )
 
@@ -93,6 +93,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo/v2 v2.19.0 // indirect
+	github.com/panjf2000/ants/v2 v2.10.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
