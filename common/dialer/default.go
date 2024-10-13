@@ -115,7 +115,7 @@ func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDi
 	}
 
 	var tlsFragment *TLSFragment = nil
-	if options.TLSFragment.Enabled {
+	if options.TLSFragment != nil && options.TLSFragment.Enabled {
 		tlsFragment = &TLSFragment{}
 		if options.TCPFastOpen {
 			return nil, E.New("TLS Fragmentation is not compatible with TCP Fast Open, set `tcp_fast_open` to `false` in your outbound if you intend to enable TLS fragmentation.")
