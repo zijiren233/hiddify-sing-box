@@ -2,7 +2,9 @@ package dialer
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/sagernet/sing-box/adapter"
@@ -14,6 +16,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	"github.com/zijiren233/gwst/ws"
+	"golang.org/x/exp/rand"
 )
 
 var _ WireGuardListener = (*DefaultDialer)(nil)
@@ -161,28 +164,67 @@ func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDi
 	}, nil
 }
 
+type wsConn struct {
+	net.Conn
+	f *ws.Forwarder
+}
+
+func (c *wsConn) Close() error {
+	defer c.f.Close()
+	return c.Conn.Close()
+}
+
 func (d *DefaultDialer) DialContext(ctx context.Context, network string, address M.Socksaddr) (net.Conn, error) {
 	if !address.IsValid() {
 		return nil, E.New("invalid address")
 	}
-	if d.wsTunnelOptions.Enabled {
-		return ws.NewDialer(address.String(), d.wsTunnelOptions.Path,
-			ws.WithDialTLS(d.wsTunnelOptions.ServerName, d.wsTunnelOptions.Insecure),
-		).DialContext(ctx, network)
-	}
 	switch N.NetworkName(network) {
 	case N.NetworkUDP:
+		if !d.wsTunnelOptions.Enabled {
+			if !address.IsIPv6() {
+				return trackConn(d.udpDialer4.DialContext(ctx, network, address.String()))
+			} else {
+				return trackConn(d.udpDialer6.DialContext(ctx, network, address.String()))
+			}
+		}
+		port := strconv.Itoa(rand.Intn(65535-1024) + 1024)
+		listen := fmt.Sprintf("127.0.0.1:%s", port)
+		f := ws.NewForwarder(listen,
+			ws.NewDialer(address.String(), d.wsTunnelOptions.Path,
+				ws.WithDialTLS(d.wsTunnelOptions.ServerName, d.wsTunnelOptions.Insecure),
+			),
+			ws.WithDisableTCP(),
+		)
+		go f.Serve()
+		<-f.OnListened()
+		conn, err := trackConn(d.udpDialer4.DialContext(ctx, network, listen))
+		if err != nil {
+			return nil, err
+		}
+		return &wsConn{conn, f}, nil
+	}
+	if !d.wsTunnelOptions.Enabled {
 		if !address.IsIPv6() {
-			return trackConn(d.udpDialer4.DialContext(ctx, network, address.String()))
+			return trackConn(d.dialer4.DialContext(ctx, network, address))
 		} else {
-			return trackConn(d.udpDialer6.DialContext(ctx, network, address.String()))
+			return trackConn(d.dialer6.DialContext(ctx, network, address))
 		}
 	}
-	if !address.IsIPv6() {
-		return trackConn(d.dialer4.DialContext(ctx, network, address))
-	} else {
-		return trackConn(d.dialer6.DialContext(ctx, network, address))
+	port := strconv.Itoa(rand.Intn(65535-1024) + 1024)
+	listen := fmt.Sprintf("127.0.0.1:%s", port)
+	f := ws.NewForwarder(listen,
+		ws.NewDialer(address.String(), d.wsTunnelOptions.Path,
+			ws.WithDialTLS(d.wsTunnelOptions.ServerName, d.wsTunnelOptions.Insecure),
+		),
+		ws.WithDisableUDP(),
+	)
+	go f.Serve()
+	<-f.OnListened()
+	conn, err := trackConn(d.dialer4.DialContext(ctx, network, M.ParseSocksaddr(listen)))
+	if err != nil {
+		return nil, err
 	}
+	return &wsConn{conn, f}, nil
 }
 
 func (d *DefaultDialer) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
