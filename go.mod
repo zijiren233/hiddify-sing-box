@@ -63,7 +63,7 @@ require (
 
 require (
 	github.com/sagernet/wireguard-go v0.0.0-00010101000000-000000000000
-	github.com/zijiren233/gwst v0.1.5
+	github.com/zijiren233/gwst v0.1.6
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 )
 
