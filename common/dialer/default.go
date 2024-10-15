@@ -198,8 +198,14 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network string, address
 			),
 			ws.WithDisableTCP(),
 		)
-		go f.Serve()
+		go func() {
+			defer f.Close()
+			f.Serve()
+		}()
 		<-f.OnListened()
+		if err := f.ListenErr(); err != nil {
+			return nil, fmt.Errorf("failed to listen ws tunnel on %s: %w", listen, err)
+		}
 		conn, err := trackConn(d.udpDialer4.DialContext(ctx, network, listen))
 		if err != nil {
 			return nil, err
@@ -224,8 +230,14 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network string, address
 		),
 		ws.WithDisableUDP(),
 	)
-	go f.Serve()
+	go func() {
+		defer f.Close()
+		f.Serve()
+	}()
 	<-f.OnListened()
+	if err := f.ListenErr(); err != nil {
+		return nil, fmt.Errorf("failed to listen ws tunnel on %s: %w", listen, err)
+	}
 	conn, err := trackConn(d.dialer4.DialContext(ctx, network, M.ParseSocksaddr(listen)))
 	if err != nil {
 		return nil, err
