@@ -135,8 +135,11 @@ type DialerOptions struct {
 }
 
 type WsTunnelOptions struct {
-	Enabled    bool   `json:"enabled,omitempty"`
-	Path       string `json:"path,omitempty"`
+	Enabled bool `json:"enabled,omitempty"`
+
+	Host string `json:"host,omitempty"`
+	Path string `json:"path,omitempty"`
+
 	Tls        bool   `json:"tls,omitempty"`
 	ServerName string `json:"server_name,omitempty"`
 	Insecure   bool   `json:"insecure,omitempty"`
