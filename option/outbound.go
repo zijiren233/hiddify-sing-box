@@ -137,6 +137,8 @@ type DialerOptions struct {
 type WsTunnelOptions struct {
 	Enabled bool `json:"enabled,omitempty"`
 
+	LoadBalance bool `json:"load_balance,omitempty"`
+
 	FallbackAddrs []string `json:"fallback_addrs,omitempty"`
 
 	Host string `json:"host,omitempty"`
