@@ -22,8 +22,10 @@ import (
 	"github.com/sagernet/sing/service/pause"
 )
 
-const TimeoutDelay = 65535
-const MinFailureToReset = 15
+const (
+	TimeoutDelay      = 65535
+	MinFailureToReset = 15
+)
 
 var (
 	_ adapter.Outbound                = (*URLTest)(nil)
@@ -177,7 +179,6 @@ func (s *URLTest) ListenPacket(ctx context.Context, destination M.Socksaddr) (ne
 		return s.group.interruptGroup.NewPacketConn(conn, interrupt.IsExternalConnectionFromContext(ctx)), nil
 	}
 	if !s.group.pauseManager.IsNetworkPaused() && s.group.udpConnectionFailureCount.IncrementConditionReset(MinFailureToReset) {
-		s.logger.Info("Hiddify! UDP URLTest Outbound ", s.tag, " (", outboundToString(s.group.selectedOutboundUDP), ") failed to connect for ", MinFailureToReset, " times==> test proxies again!")
 		s.group.selectedOutboundUDP = nil
 		s.group.urlTest(ctx, true)
 	}
@@ -491,6 +492,7 @@ func (m *MinZeroAtomicInt64) Reset() int64 {
 	m.count = 0
 	return m.count
 }
+
 func (m *MinZeroAtomicInt64) IncrementConditionReset(condition int64) bool {
 	m.access.Lock()
 	defer m.access.Unlock()

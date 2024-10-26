@@ -74,7 +74,7 @@ func NewWireGuard(ctx context.Context, router adapter.Router, logger log.Context
 		ctx:          ctx,
 		workers:      options.Workers,
 		pauseManager: service.FromContext[pause.Manager](ctx),
-		hforwarder:   hforwarder, //hiddify
+		hforwarder:   hforwarder, // hiddify
 	}
 	outbound.fakePackets = []int{0, 0}
 	outbound.fakePacketsSize = []int{0, 0}
@@ -251,9 +251,9 @@ func (w *WireGuard) start() error {
 }
 
 func (w *WireGuard) Close() error {
-	if w.hforwarder != nil { //hiddify
-		w.hforwarder.Close() //hiddify
-	} //hiddify
+	if w.hforwarder != nil { // hiddify
+		w.hforwarder.Close() // hiddify
+	} // hiddify
 	if w.device != nil {
 		w.device.Close()
 	}
@@ -265,76 +265,34 @@ func (w *WireGuard) Close() error {
 }
 
 func (w *WireGuard) InterfaceUpdated() {
-	w.logger.Info("Hiddify! Wirguard! Interface updated!XXX")
 	// <-time.After(10 * time.Millisecond)
 	// if true {
 	// 	return
 	// }
 	if w.pauseManager.IsNetworkPaused() {
-		w.logger.Error("Hiddify! Network is paused!... returning")
 		return
 	}
 	<-time.After(50 * time.Millisecond)
 	err := w.device.BindUpdate()
 	<-time.After(50 * time.Millisecond)
-	// err := fmt.Errorf("Hiddify! downing wireguard interface failed")
 
 	if err != nil {
-		w.logger.Error("Hiddify! bind update failed", err)
 	}
-	// w.logger.Error("Hiddify! downing...")
-	// e1 := w.device.Down()
-	// if e1 != nil {
-	// 	w.logger.Error("Hiddify! downing wireguard interface failed", e1)
-	// } else {
-	// 	w.logger.Warn("Hiddify! downing   Ok!")
-	// }
-	// for i := 0; i < 5; i++ {
-	// 	if !w.pauseManager.IsNetworkPaused() {
-	// 		break
-	// 	}
-	// 	if i == 4 {
-	// 		w.logger.Error("No network is availble after 4 seconds, stopping wireguard.")
-	// 		return
-	// 	}
-	// 	w.logger.Warn("Network is pause waiting ", i)
-	// 	select {
-	// 	case <-time.After(1 * time.Second):
-	// 		// case <-w.conn.done:
-	// 		// 	return
-	// 	}
-	// }
-	// <-time.After(100 * time.Millisecond)
-	// w.logger.Warn("Hiddify! uping.... wireguard interface")
-	// e2 := w.device.Up()
-	// if e2 != nil {
-	// 	w.logger.Error("Hiddify! Uping wireguard interface failed", e2)
-	// } else {
-	// 	w.logger.Warn("Hiddify! OK!Updating wireguard interface")
-
-	// }
-	// } else {
-	// 	w.logger.Warn("Hiddify! OK2!Updating wireguard interface")
-	// }
 	return
 }
 
 func (w *WireGuard) onPauseUpdated(event int) {
-	w.logger.Info("Hiddify! Wirguard! on Pause updated! event=", event)
-	// <-time.After(1000 * time.Millisecond)
 	switch event {
 
 	case pause.EventDevicePaused:
 		w.device.Down()
-	case pause.EventNetworkPause: //hiddify already handled in Interface Updated
+	case pause.EventNetworkPause: // hiddify already handled in Interface Updated
 		err := w.device.Down()
-		w.logger.Info("Hiddify! Wirguard! downing net! err=", err)
 		<-time.After(50 * time.Millisecond)
 	case pause.EventDeviceWake:
 		w.device.Up()
-	case pause.EventNetworkWake: //hiddify already handled in Interface Updated
+	case pause.EventNetworkWake: // hiddify already handled in Interface Updated
 		err := w.device.Up()
-		w.logger.Info("Hiddify! Wirguard! Uping net! err=", err)
 		<-time.After(50 * time.Millisecond)
 	}
 }

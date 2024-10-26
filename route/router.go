@@ -3,7 +3,6 @@ package route
 import (
 	"context"
 	"errors"
-
 	"net"
 	"net/netip"
 	"net/url"
@@ -58,7 +57,7 @@ type Router struct {
 	dnsLogger                            log.ContextLogger
 	inboundByTag                         map[string]adapter.Inbound
 	outbounds                            []adapter.Outbound
-	sortedOutboundsByDependenciesHiddify []adapter.Outbound //hiddify
+	sortedOutboundsByDependenciesHiddify []adapter.Outbound // hiddify
 	outboundByTag                        map[string]adapter.Outbound
 	rules                                []adapter.Rule
 	defaultDetour                        string
@@ -73,7 +72,7 @@ type Router struct {
 	geositeCache                         map[string]adapter.Rule
 	needFindProcess                      bool
 	dnsClient                            *dns.Client
-	staticDns                            map[string]StaticDNSEntry //Hiddify
+	staticDns                            map[string]StaticDNSEntry // Hiddify
 	defaultDomainStrategy                dns.DomainStrategy
 	dnsRules                             []adapter.DNSRule
 	ruleSets                             []adapter.RuleSet
@@ -139,7 +138,7 @@ func NewRouter(
 		needPackageManager: common.Any(inbounds, func(inbound option.Inbound) bool {
 			return len(inbound.TunOptions.IncludePackage) > 0 || len(inbound.TunOptions.ExcludePackage) > 0
 		}),
-		staticDns: createEntries(dnsOptions.StaticIPs), //hiddify
+		staticDns: createEntries(dnsOptions.StaticIPs), // hiddify
 	}
 	router.dnsClient = dns.NewClient(dns.ClientOptions{
 		DisableCache:     dnsOptions.DNSClientOptions.DisableCache,
@@ -264,7 +263,6 @@ func NewRouter(
 				if checkDNSLoopDomainName != "" {
 					checkDNSLoopDomain[checkDNSLoopDomainName] = transport.Name()
 				}
-
 			}
 			transports[i] = transport
 			dummyTransportMap[tag] = transport
@@ -397,7 +395,7 @@ func NewRouter(
 		}
 		ctx, metadata := adapter.AppendContext(ctx)
 		metadata.Domain = domain
-		ctx, dnstransport, _, _, _ := router.matchDNS(ctx, false, 0,true)
+		ctx, dnstransport, _, _, _ := router.matchDNS(ctx, false, 0, true)
 
 		if dnstransport != nil && dnstransport.Name() == tag {
 			return nil, E.New("Dns Loop Detected[", tag, "]")
@@ -1144,7 +1142,6 @@ func (r *Router) InterfaceFinder() control.InterfaceFinder {
 }
 
 func (r *Router) UpdateInterfaces() error {
-	r.logger.Info("Hiddify!UpdateInterfaces ")
 	if r.platformInterface == nil || !r.platformInterface.UsePlatformInterfaceGetter() {
 		return r.interfaceFinder.Update()
 	} else {
@@ -1244,7 +1241,6 @@ func (r *Router) NewError(ctx context.Context, err error) {
 }
 
 func (r *Router) notifyNetworkUpdate(event int) {
-	r.logger.Info("Hiddify!notifyNetworkUpdate ", event)
 	if event == tun.EventNoRoute {
 		r.pauseManager.NetworkPause()
 		r.logger.Error("missing default interface")
@@ -1271,7 +1267,6 @@ func (r *Router) notifyNetworkUpdate(event int) {
 }
 
 func (r *Router) ResetNetwork() error {
-	r.logger.Info("Hiddify!Reseting Network")
 	conntrack.Close()
 
 	for _, outbound := range r.sortedOutboundsByDependenciesHiddify {
@@ -1302,9 +1297,10 @@ func (r *Router) updateWIFIState() {
 	}
 }
 
-func (r *Router) SortedOutboundsByDependenciesHiddify() []adapter.Outbound { //hiddify
+func (r *Router) SortedOutboundsByDependenciesHiddify() []adapter.Outbound { // hiddify
 	return r.sortedOutboundsByDependenciesHiddify
 }
+
 func (r *Router) doSortOutboundsByDependencies() {
 	started := make(map[string]bool)
 
@@ -1340,5 +1336,4 @@ func (r *Router) notifyWindowsPowerEvent(event int) {
 		r.pauseManager.DeviceWake()
 		_ = r.ResetNetwork()
 	}
-
 }
