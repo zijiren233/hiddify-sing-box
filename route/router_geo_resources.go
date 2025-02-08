@@ -79,6 +79,7 @@ func (r *Router) prepareGeoIPDatabase() error {
 	}
 	geoReader, codes, err := geoip.Open(geoPath)
 	if err != nil {
+		os.Remove(geoPath)
 		return E.Cause(err, "open geoip database")
 	}
 	r.logger.Info("loaded geoip database: ", len(codes), " codes")
@@ -127,6 +128,7 @@ func (r *Router) prepareGeositeDatabase() error {
 		r.logger.Info("loaded geosite database: ", len(codes), " codes")
 		r.geositeReader = geoReader
 	} else {
+		os.Remove(geoPath)
 		return E.Cause(err, "open geosite database")
 	}
 	return nil

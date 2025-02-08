@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/sagernet/sing-box/common/geosite"
 	"github.com/sagernet/sing-box/log"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -33,6 +35,7 @@ func init() {
 func geositePreRun() error {
 	reader, codeList, err := geosite.Open(commandGeoSiteFlagFile)
 	if err != nil {
+		os.Remove(commandGeoSiteFlagFile)
 		return E.Cause(err, "open geosite file")
 	}
 	geositeReader = reader
