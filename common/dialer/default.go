@@ -15,6 +15,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
+
 	"github.com/zijiren233/gwst/ws"
 	"golang.org/x/exp/rand"
 )
@@ -136,7 +137,6 @@ func NewDefault(router adapter.Router, options option.DialerOptions) (*DefaultDi
 			return nil, E.Cause(err, "invalid TLS fragment size supplied")
 		}
 		tlsFragment.Size = size
-
 	}
 	if options.IsWireGuardListener {
 		for _, controlFn := range wgControlFns {
@@ -188,17 +188,18 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network string, address
 			}
 		}
 		port := strconv.Itoa(rand.Intn(65535-1024) + 1024)
-		listen := fmt.Sprintf("127.0.0.1:%s", port)
+		listen := "127.0.0.1:" + port
 		f := ws.NewForwarder(
 			listen,
 			ws.NewDialer(
 				ws.WithAddr(address.String()),
+				ws.WithHost(d.wsTunnelOptions.Host),
 				ws.WithPath(d.wsTunnelOptions.Path),
+				ws.WithKey(d.wsTunnelOptions.Key),
 				ws.WithFallbackAddrs(d.wsTunnelOptions.FallbackAddrs),
 				ws.WithLoadBalance(d.wsTunnelOptions.LoadBalance),
-				ws.WithHost(d.wsTunnelOptions.Host),
 				ws.WithDialTLS(d.wsTunnelOptions.TLS),
-				ws.WithServerName(d.wsTunnelOptions.ServerName),
+				ws.WithDialServerName(d.wsTunnelOptions.ServerName),
 				ws.WithInsecure(d.wsTunnelOptions.Insecure),
 				ws.WithTarget(d.wsTunnelOptions.Target),
 				ws.WithNamedTarget(d.wsTunnelOptions.NamedTarget),
@@ -227,17 +228,18 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network string, address
 		}
 	}
 	port := strconv.Itoa(rand.Intn(65535-1024) + 1024)
-	listen := fmt.Sprintf("127.0.0.1:%s", port)
+	listen := "127.0.0.1:" + port
 	f := ws.NewForwarder(
 		listen,
 		ws.NewDialer(
 			ws.WithAddr(address.String()),
+			ws.WithHost(d.wsTunnelOptions.Host),
 			ws.WithPath(d.wsTunnelOptions.Path),
+			ws.WithKey(d.wsTunnelOptions.Key),
 			ws.WithFallbackAddrs(d.wsTunnelOptions.FallbackAddrs),
 			ws.WithLoadBalance(d.wsTunnelOptions.LoadBalance),
-			ws.WithHost(d.wsTunnelOptions.Host),
 			ws.WithDialTLS(d.wsTunnelOptions.TLS),
-			ws.WithServerName(d.wsTunnelOptions.ServerName),
+			ws.WithDialServerName(d.wsTunnelOptions.ServerName),
 			ws.WithInsecure(d.wsTunnelOptions.Insecure),
 			ws.WithTarget(d.wsTunnelOptions.Target),
 			ws.WithNamedTarget(d.wsTunnelOptions.NamedTarget),

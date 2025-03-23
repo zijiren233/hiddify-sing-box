@@ -144,6 +144,8 @@ type WsTunnelOptions struct {
 	Host string `json:"host,omitempty"`
 	Path string `json:"path,omitempty"`
 
+	Key string `json:"key,omitempty"`
+
 	TLS        bool   `json:"tls,omitempty"`
 	ServerName string `json:"server_name,omitempty"`
 	Insecure   bool   `json:"insecure,omitempty"`
